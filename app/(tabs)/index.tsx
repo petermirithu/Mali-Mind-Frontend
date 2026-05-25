@@ -1,162 +1,41 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
-  Dimensions,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text } from '@gluestack-ui/themed';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-
-import { useDashboard, type DashboardResponse } from '@/hooks/use-dashboard';
+import { Text, View } from '@gluestack-ui/themed';
+import { useDashboard, type DashboardFoodBasket } from '@/hooks/use-dashboard';
+import { Spinner } from '@/components/ui/spinner';
 import { useTheme } from '@/contexts/theme-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-
-// ─── Fallback data ────────────────────────────────────────────────────────────
-const fallbackDashboard: DashboardResponse = {
-  fuel: {
-    id: 9,
-    petrol_per_litre: 188.4,
-    diesel_per_litre: 196.63,
-    kerosene_per_litre: 152.78,
-    source: 'EPRA_TICKER',
-    location: 'Nairobi',
-    created_at: '2026-04-27T15:32:21.172094Z',
-  },
-  forex: {
-    id: 3,
-    usd_kes: 129.45,
-    eur_kes: 151.57,
-    gbp_kes: 175.07,
-    source: 'open_exchange_rates',
-    created_at: '2026-04-27T15:35:30.171441Z',
-  },
-  food_basket: [
-    { id: 38, name: 'wheat flour', price_kes: 90.0, unit: '1kg', retailer: 'Quickmart', source: '', created_at: '' },
-    { id: 39, name: 'rice', price_kes: 155.0, unit: '1kg', retailer: 'Quickmart', source: '', created_at: '' },
-    { id: 40, name: 'sugar', price_kes: 155.0, unit: '1kg', retailer: 'Quickmart', source: '', created_at: '' },
-    { id: 41, name: 'cooking oil', price_kes: 311.0, unit: '1L', retailer: 'Quickmart', source: '', created_at: '' },
-    { id: 37, name: 'maize flour', price_kes: 86.0, unit: '1kg', retailer: 'Quickmart', source: '', created_at: '' },
-  ],
-  latest_insight: {
-    id: 6,
-    trigger: 'food_update',
-    summary:
-      'Fuel prices rose this week, pushing up transport costs and expected food prices in major towns. Households should budget for higher expenses in the coming days.',
-    impact_score: -0.6,
-    affected_areas: ['food'],
-    created_at: '2026-04-28T17:36:16.671217Z',
-  },
-  updated_at: '2026-04-30T13:21:43.039188',
-};
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const C = {
-  bg: '#0D1117',
-  surface: '#121821',
-  card: '#1A2332',
-  cardBorder: '#243044',
-  green: '#0B8F4D',
-  greenDim: 'rgba(11,143,77,0.15)',
-  greenGlow: 'rgba(11,143,77,0.35)',
-  text: '#FFFFFF',
-  textSub: '#8A9BB5',
-  textDim: '#4A5A72',
-  danger: '#F05B5B',
-  dangerDim: 'rgba(240,91,91,0.12)',
-  gold: '#F5B301',
-};
-
-// ─── Sparkline chart ──────────────────────────────────────────────────────────
-const SPARK_DATA = [62, 58, 65, 60, 70, 66, 74, 69, 78, 73, 82, 79, 88, 84, 92];
-
-function SparklineChart() {
-  const W = Dimensions.get('window').width - 80; // card padding
-  const H = 72;
-  const pad = 4;
-
-  const min = Math.min(...SPARK_DATA);
-  const max = Math.max(...SPARK_DATA);
-  const range = max - min || 1;
-  const stepX = (W - pad * 2) / (SPARK_DATA.length - 1);
-
-  const points = SPARK_DATA.map((v, i) => ({
-    x: pad + i * stepX,
-    y: H - pad - ((v - min) / range) * (H - pad * 2),
-  }));
-
-  const linePath = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(' ');
-
-  const areaPath =
-    linePath +
-    ` L ${points[points.length - 1].x.toFixed(1)} ${H} L ${points[0].x.toFixed(1)} ${H} Z`;
-
-  return (
-    <Svg width={W} height={H}>
-      <Defs>
-        <LinearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={C.green} stopOpacity="0.35" />
-          <Stop offset="1" stopColor={C.green} stopOpacity="0" />
-        </LinearGradient>
-      </Defs>
-      <Path d={areaPath} fill="url(#spark)" />
-      <Path d={linePath} stroke={C.green} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-// ─── Cards ────────────────────────────────────────────────────────────────────
-function Card({ children, style }: { children: React.ReactNode; style?: object }) {
-  return <View style={[styles.card, style]}>{children}</View>;
-}
-
-function IndicatorCard({
-  icon,
-  label,
-  value,
-  trend,
-  trendLabel,
-  positive = false,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-  trend: string;
-  trendLabel: string;
-  positive?: boolean;
-}) {
-  return (
-    <Card style={styles.indicatorCard}>
-      <View style={styles.indicatorHeader}>
-        <Text style={styles.indicatorIcon}>{icon}</Text>
-        <Text style={styles.indicatorLabel}>{label}</Text>
-      </View>
-      <Text style={styles.indicatorValue}>{value}</Text>
-      <View style={[styles.trendPill, { backgroundColor: positive ? C.greenDim : C.dangerDim }]}>
-        <Text style={[styles.trendText, { color: positive ? C.green : C.danger }]}>
-          {trend} {trendLabel}
-        </Text>
-      </View>
-    </Card>
-  );
-}
+import Card from '@/components/ui/home/card';
+import SparklineChart from '@/components/ui/home/sparklineChart';
+import IndicatorCard from '@/components/ui/home/indicatorCard';
+import BreakdownModal from '@/components/ui/home/breakdownModal';
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { data, isLoading } = useDashboard();
-  const dashboard = data ?? fallbackDashboard;
-  const foodTotal = dashboard.food_basket
-    .slice(0, 4)
-    .reduce((s, i) => s + i.price_kes, 0);
+  const { theme } = useTheme();
+
+  const { data: dashboard, isLoading } = useDashboard();
+  const [selectedIndicator, setSelectedIndicator] = useState<'food' | 'fuel' | 'forex' | null>(null);
+  const [activeInsightIndex, setActiveInsightIndex] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
+
+  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Auto-play AI insights carousel
+  useEffect(() => {
+    if (!dashboard?.latest_insight || dashboard.latest_insight.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveInsightIndex((prev) => (prev + 1) % dashboard.latest_insight.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [dashboard?.latest_insight]);
 
   useEffect(() => {
     Animated.parallel([
@@ -165,12 +44,166 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (isLoading || !dashboard) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Spinner size={"large"} color={theme.primary} />
+          <Text style={{ color: theme.textDim, marginTop: 20 }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const getTrend = (latest: number, prev?: number) => {
+    if (!prev || prev === 0) return { trendStr: '-', positive: true, pct: 0 };
+    const diff = latest - prev;
+    const pct = (diff / prev) * 100;
+    const isDown = pct <= 0;
+    const trendStr = `${isDown ? '↓' : '↑'} ${Math.abs(pct).toFixed(1)}%`;
+    return { trendStr, positive: isDown, pct };
+  };
+
+  const getFoodTotal = (fb?: DashboardFoodBasket) => {
+    if (!fb) return 0;
+    return (
+      fb.maize_flour + fb.wheat_flour + fb.rice + fb.sugar + fb.cooking_oil +
+      fb.milk + fb.eggs + fb.bread + fb.tomatoes + fb.onions
+    );
+  };
+
+  const latestFuel = dashboard.fuel?.[0];
+  const prevFuel = dashboard.fuel?.[1];
+  const fuelTrend = getTrend(latestFuel?.petrol_per_litre, prevFuel?.petrol_per_litre);
+
+  const latestForex = dashboard.forex?.[0];
+  const prevForex = dashboard.forex?.[1];
+  const forexTrend = getTrend(latestForex?.usd_kes, prevForex?.usd_kes);
+
+  const latestFood = dashboard.food_basket?.[0];
+  const prevFood = dashboard.food_basket?.[1];
+  const currentFoodTotal = getFoodTotal(latestFood);
+  const prevFoodTotal = getFoodTotal(prevFood);
+  const foodTrend = getTrend(currentFoodTotal, prevFoodTotal);
+
+  const avgPct = (fuelTrend.pct + forexTrend.pct + foodTrend.pct) / 3;
+  const pulseIsDown = avgPct <= 0;
+  const pulseArrow = pulseIsDown ? '↓' : '↑';
+
+  // Dynamic cost of living high impact drivers (categories that increased in price)
+  const driverPairs = [
+    { label: 'Fuel', pct: fuelTrend.pct },
+    { label: 'Forex', pct: forexTrend.pct },
+    { label: 'Food', pct: foodTrend.pct }
+  ].sort((a, b) => b.pct - a.pct);
+
+  const highImpactDrivers = driverPairs
+    .filter(d => d.pct > 0)
+    .map(d => d.label);
+
+  const highImpactStr = highImpactDrivers.length > 0
+    ? highImpactDrivers.join(', ')
+    : 'None (Stable)';
+
+  // Generate dynamic sparkline data with custom interpolation & micro-fluctuations
+  const generateSparkData = () => {
+    const points: number[] = [];
+    const steps = 10;
+    const latestCombined = (latestFuel?.petrol_per_litre || 0) + (latestForex?.usd_kes || 0) + currentFoodTotal;
+    const prevCombined = (prevFuel?.petrol_per_litre || latestFuel?.petrol_per_litre || 0) +
+      (prevForex?.usd_kes || latestForex?.usd_kes || 0) +
+      (prevFoodTotal || currentFoodTotal || 0);
+
+    for (let i = 0; i < steps; i++) {
+      const t = i / (steps - 1);
+      const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const base = prevCombined + (latestCombined - prevCombined) * easeT;
+      const fluctuation = Math.sin(t * Math.PI * 3.5) * (base * 0.006) + Math.cos(t * Math.PI * 1.5) * (base * 0.003);
+      points.push(base + fluctuation);
+    }
+    return points;
+  };
+
+  const sparkData = generateSparkData();
+
+  // Food basket configuration for breakdown listing
+  const foodItemsConfig = [
+    { key: 'maize_flour', label: 'Maize Flour', icon: '🌽' },
+    { key: 'wheat_flour', label: 'Wheat Flour', icon: '🌾' },
+    { key: 'rice', label: 'Rice', icon: '🍚' },
+    { key: 'sugar', label: 'Sugar', icon: '🍬' },
+    { key: 'cooking_oil', label: 'Cooking Oil', icon: '🍾' },
+    { key: 'milk', label: 'Milk', icon: '🥛' },
+    { key: 'eggs', label: 'Eggs', icon: '🥚' },
+    { key: 'bread', label: 'Bread', icon: '🍞' },
+    { key: 'tomatoes', label: 'Tomatoes', icon: '🍅' },
+    { key: 'onions', label: 'Onions', icon: '🧅' },
+  ] as const;
+
+  // ── Cycling data for indicator cards ──────────────────────────────────────
+  const dieselTrend = getTrend(latestFuel?.diesel_per_litre, prevFuel?.diesel_per_litre);
+  const keroseneTrend = getTrend(latestFuel?.kerosene_per_litre, prevFuel?.kerosene_per_litre);
+
+  const fuelCycleData = latestFuel ? [
+    { label: 'Petrol / Litre', value: `KES ${latestFuel.petrol_per_litre?.toFixed(2)}`, trend: fuelTrend.trendStr, trendLabel: 'vs last week', positive: fuelTrend.positive },
+    { label: 'Diesel / Litre', value: `KES ${latestFuel.diesel_per_litre?.toFixed(2)}`, trend: dieselTrend.trendStr, trendLabel: 'vs last week', positive: dieselTrend.positive },
+    { label: 'Kerosene / Litre', value: `KES ${latestFuel.kerosene_per_litre?.toFixed(2)}`, trend: keroseneTrend.trendStr, trendLabel: 'vs last week', positive: keroseneTrend.positive },
+  ] : undefined;
+
+  const eurTrend = getTrend(latestForex?.eur_kes, prevForex?.eur_kes);
+  const gbpTrend = getTrend(latestForex?.gbp_kes, prevForex?.gbp_kes);
+
+  const forexCycleData = latestForex ? [
+    { label: 'USD / KES', value: latestForex.usd_kes?.toFixed(2), trend: forexTrend.trendStr, trendLabel: 'vs last week', positive: forexTrend.positive },
+    { label: 'EUR / KES', value: latestForex.eur_kes?.toFixed(2), trend: eurTrend.trendStr, trendLabel: 'vs last week', positive: eurTrend.positive },
+    { label: 'GBP / KES', value: latestForex.gbp_kes?.toFixed(2), trend: gbpTrend.trendStr, trendLabel: 'vs last week', positive: gbpTrend.positive },
+  ] : undefined;
+
+  const foodCycleItems = [
+    { key: 'maize_flour', label: 'Maize Flour' },
+    { key: 'rice', label: 'Rice' },
+    { key: 'sugar', label: 'Sugar' },
+    { key: 'cooking_oil', label: 'Cooking Oil' },
+    { key: 'milk', label: 'Milk' },
+  ] as const;
+
+  const foodCycleData = latestFood ? [
+    // First entry: overall basket total
+    {
+      label: 'Food Basket',
+      value: `KES ${currentFoodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`,
+      trend: foodTrend.trendStr,
+      trendLabel: 'vs last week',
+      positive: foodTrend.positive,
+    },
+    // Then cycle through key individual items
+    ...foodCycleItems.map((item) => {
+      const latVal = latestFood[item.key as keyof DashboardFoodBasket] as number;
+      const prevVal = prevFood ? (prevFood[item.key as keyof DashboardFoodBasket] as number) : undefined;
+      const itemTrend = getTrend(latVal, prevVal);
+      return {
+        label: item.label,
+        value: `KES ${latVal?.toFixed(2) || '0.00'}`,
+        trend: itemTrend.trendStr,
+        trendLabel: 'vs last week',
+        positive: itemTrend.positive,
+      };
+    }),
+  ] : undefined;
+
+  // ── Simulated CPI / Inflation Calculation ─────────────────────────────────
+  const foodWeight = 0.50; // 50%
+  const fuelWeight = 0.30; // 30%
+  const forexWeight = 0.20; // 20%
+  
+  const estimatedWeeklyInflation = (foodTrend.pct * foodWeight) + (fuelTrend.pct * fuelWeight) + (forexTrend.pct * forexWeight);
+  const isInflationDown = estimatedWeeklyInflation <= 0;
+  const inflationTrendStr = `${isInflationDown ? '↓' : '↑'} ${Math.abs(estimatedWeeklyInflation).toFixed(2)}%`;
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top']}>
       <ScrollView
-        style={styles.screen}
+        style={{ flex: 1, backgroundColor: theme.background }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -179,68 +212,90 @@ export default function HomeScreen() {
           {/* ── Header ───────────────────────────────────────────────────── */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>Hello, Alex 👋</Text>
-              <Text style={styles.date}>{today}</Text>
+              <Text style={styles.greeting} color={theme.text}>Hello, Alex 👋</Text>
+              <Text style={styles.date} color={theme.textDim}>{today}</Text>
             </View>
-            <TouchableOpacity style={styles.bellBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={[styles.bellBtn, {
+                backgroundColor: theme.card,
+                borderColor: theme.cardBorder
+              }]}
+              activeOpacity={0.7}>
               <Text style={styles.bellIcon}>🔔</Text>
             </TouchableOpacity>
           </View>
 
           {/* ── Cost of Living Pulse ──────────────────────────────────────── */}
-          <Card style={styles.pulseCard}>
+          <Card style={[styles.pulseCard, {
+            backgroundColor: theme.surface,
+            borderColor: theme.cardBorder
+          }]}>
             <View style={styles.pulseTopRow}>
               <View>
-                <Text style={styles.pulseHeading}>COST OF LIVING PULSE</Text>
-                <Text style={styles.pulseSubheading}>Overall change this week</Text>
+                <Text style={styles.pulseHeading} color={theme.text}>COST OF LIVING PULSE</Text>
+                <Text style={styles.pulseSubheading} color={theme.textDim}>Overall change this week</Text>
               </View>
             </View>
             <View style={styles.pulseMidRow}>
-              <Text style={styles.pulseArrow}>↑</Text>
-              <Text style={styles.pulseValue}>2.3%</Text>
+              <Text style={[styles.pulseArrow, {
+                color: pulseIsDown ? theme.primary : theme.danger
+              }]}>{pulseArrow}</Text>
+              <Text style={styles.pulseValue} color={theme.text}>{Math.abs(avgPct).toFixed(1)}%</Text>
             </View>
-            <Text style={styles.pulseDrivers}>High impact: Fuel, Food, Transport</Text>
+            <Text style={styles.pulseDrivers} color={theme.textDim}>High impact: {highImpactStr}</Text>
             <View style={styles.sparklineContainer}>
-              <SparklineChart />
+              <SparklineChart data={sparkData} positive={pulseIsDown} />
             </View>
           </Card>
 
           {/* ── Key indicators label ──────────────────────────────────────── */}
-          <Text style={styles.sectionLabel}>KEY INDICATORS</Text>
+          <Text style={styles.sectionLabel} color={theme.textDim}>KEY INDICATORS</Text>
 
           {/* ── Grid row 1 ────────────────────────────────────────────────── */}
           <View style={styles.grid}>
             <IndicatorCard
               icon="⛽"
-              label="Fuel Prices"
-              value={`KES ${dashboard.fuel.petrol_per_litre.toFixed(2)}`}
-              trend="↑ 3.6%"
+              label="Petrol / Litre"
+              value={`KES ${latestFuel?.petrol_per_litre?.toFixed(2) || '0.00'}`}
+              trend={fuelTrend.trendStr}
               trendLabel="vs last week"
+              positive={fuelTrend.positive}
+              onPress={() => setSelectedIndicator('fuel')}
+              cycleData={fuelCycleData}
             />
             <IndicatorCard
               icon="💵"
               label="USD / KES"
-              value={dashboard.forex.usd_kes.toFixed(2)}
-              trend="↑ 1.2%"
+              value={latestForex?.usd_kes?.toFixed(2) || '0.00'}
+              trend={forexTrend.trendStr}
               trendLabel="vs last week"
+              positive={forexTrend.positive}
+              onPress={() => setSelectedIndicator('forex')}
+              cycleData={forexCycleData}
             />
           </View>
 
           {/* ── Grid row 2 ────────────────────────────────────────────────── */}
           <View style={styles.grid}>
-            <IndicatorCard
-              icon="🛒"
-              label="Food Basket"
-              value={`KES ${foodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
-              trend="↑ 2.7%"
-              trendLabel="vs last week"
-            />
+            <View style={{ width: 175 }}>
+              <IndicatorCard
+                icon="🛒"
+                label="Food Basket"
+                value={`KES ${currentFoodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
+                trend={foodTrend.trendStr}
+                trendLabel="vs last week"
+                positive={foodTrend.positive}
+                onPress={() => setSelectedIndicator('food')}
+                cycleData={foodCycleData}
+              />
+            </View>
             <IndicatorCard
               icon="📈"
-              label="Inflation (CPI)"
-              value="5.2%"
-              trend="↑ 0.4%"
-              trendLabel="vs last month"
+              label="Est. Inflation"
+              value={`${estimatedWeeklyInflation > 0 ? '+' : ''}${estimatedWeeklyInflation.toFixed(2)}%`}
+              trend={inflationTrendStr}
+              trendLabel="vs last week"
+              positive={isInflationDown}
             />
           </View>
 
@@ -248,57 +303,113 @@ export default function HomeScreen() {
           <Card style={styles.insightCard}>
             <View style={styles.insightTopRow}>
               <View style={styles.insightTitleRow}>
-                <View style={styles.insightDot} />
-                <Text style={styles.insightLabel}>✦ AI INSIGHT</Text>
+                <View style={styles.insightDot} backgroundColor={theme.primary} />
+                <Text style={styles.insightLabel} color={theme.primary}>✦ AI INSIGHT</Text>
               </View>
-              <TouchableOpacity activeOpacity={0.7}>
-                <Text style={styles.insightClose}>✕</Text>
-              </TouchableOpacity>
             </View>
-            <Text style={styles.insightText}>
-              {isLoading ? 'Loading latest insight…' : dashboard.latest_insight.summary}
+            <Text style={styles.insightText} color={theme.textDim}>
+              {dashboard.latest_insight?.[activeInsightIndex]?.summary || 'No insights available.'}
             </Text>
             <TouchableOpacity style={styles.insightReadMore} activeOpacity={0.7}>
-              <Text style={styles.insightReadMoreText}>Read more →</Text>
+              <Text style={styles.insightReadMoreText} color={theme.primary}>Read more →</Text>
             </TouchableOpacity>
           </Card>
 
           {/* ── Pagination dots ───────────────────────────────────────────── */}
           <View style={styles.dots}>
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
+            {dashboard.latest_insight?.map((_, idx) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => setActiveInsightIndex(idx)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.dot, activeInsightIndex === idx && styles.dotActive]} backgroundColor={theme.primary} />
+              </TouchableOpacity>
+            ))}
           </View>
 
+          {/* ── Detail Breakdown Modals ────────────────────────────────────── */}
+          {selectedIndicator === 'food' && latestFood && (
+            <BreakdownModal
+              visible={true}
+              title="Food Basket Items"
+              onClose={() => setSelectedIndicator(null)}
+            >
+              {foodItemsConfig.map((item) => {
+                const val = latestFood[item.key as keyof DashboardFoodBasket];
+                return (
+                  <View key={item.key} style={styles.modalRow}>
+                    <Text style={styles.modalRowLabel} color={theme.textDim}>
+                      {item.icon} {item.label}
+                    </Text>
+                    <Text style={styles.modalRowValue} color={theme.text}>
+                      KES {typeof val === 'number' ? val.toFixed(2) : '0.00'}
+                    </Text>
+                  </View>
+                );
+              })}
+            </BreakdownModal>
+          )}
+
+          {selectedIndicator === 'fuel' && latestFuel && (
+            <BreakdownModal
+              visible={true}
+              title="Fuel Prices Breakdown"
+              onClose={() => setSelectedIndicator(null)}
+            >
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowLabel} color={theme.textDim}>⛽ Petrol per Litre</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>KES {latestFuel.petrol_per_litre.toFixed(2)}</Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowLabel} color={theme.textDim}>🚛 Diesel per Litre</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>KES {latestFuel.diesel_per_litre.toFixed(2)}</Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowLabel} color={theme.textDim}>🪔 Kerosene per Litre</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>KES {latestFuel.kerosene_per_litre.toFixed(2)}</Text>
+              </View>
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ fontSize: 12, color: theme.textDim, textAlign: 'center' }}>
+                  Source: {latestFuel.source} ({latestFuel.location})
+                </Text>
+              </View>
+            </BreakdownModal>
+          )}
+
+          {selectedIndicator === 'forex' && latestForex && (
+            <BreakdownModal
+              visible={true}
+              title="Exchange Rates Breakdown"
+              onClose={() => setSelectedIndicator(null)}
+            >
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowLabel} color={theme.textDim}>🇺🇸 USD / KES</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>{latestForex.usd_kes.toFixed(2)} KES</Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowLabel} color={theme.textDim}>🇪🇺 EUR / KES</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>{latestForex.eur_kes.toFixed(2)} KES</Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalRowLabel} color={theme.textDim}>🇬🇧 GBP / KES</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>{latestForex.gbp_kes.toFixed(2)} KES</Text>
+              </View>
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ fontSize: 12, color: theme.textDim, textAlign: 'center' }}>
+                  Source: {latestForex.source}
+                </Text>
+              </View>
+            </BreakdownModal>
+          )}
         </Animated.View>
       </ScrollView>
-
-      {/* ── Bottom Tab Bar ────────────────────────────────────────────────── */}
-      {/* <View style={styles.tabBar}>
-        {[
-          { icon: '⊞', label: 'Home', active: true },
-          { icon: '⚡', label: 'Impact', active: false },
-          { icon: '✦', label: 'Ask Mali', active: false },
-          { icon: '📰', label: 'Feed', active: false },
-          { icon: '👤', label: 'Profile', active: false },
-        ].map((tab) => (
-          <TouchableOpacity key={tab.label} style={styles.tabItem} activeOpacity={0.7}>
-            <Text style={[styles.tabIcon, tab.active && styles.tabIconActive]}>{tab.icon}</Text>
-            <Text style={[styles.tabLabel, tab.active && styles.tabLabelActive]}>{tab.label}</Text>
-            {tab.active && <View style={styles.tabActiveBar} />}
-          </TouchableOpacity>
-        ))}
-      </View> */}
     </SafeAreaView>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -315,21 +426,17 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 22,
     fontWeight: '700',
-    color: C.text,
     letterSpacing: 0.2,
   },
   date: {
     fontSize: 13,
-    color: C.textSub,
     marginTop: 3,
   },
   bellBtn: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: C.cardBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -337,25 +444,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 
-  // Card base
-  card: {
-    backgroundColor: C.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.cardBorder,
-    padding: 18,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-
   // Pulse card
   pulseCard: {
-    backgroundColor: C.surface,
-    borderColor: C.cardBorder,
     marginBottom: 20,
     overflow: 'hidden',
   },
@@ -367,12 +457,10 @@ const styles = StyleSheet.create({
   pulseHeading: {
     fontSize: 11,
     fontWeight: '700',
-    color: C.textSub,
     letterSpacing: 1.2,
   },
   pulseSubheading: {
     fontSize: 12,
-    color: C.textDim,
     marginTop: 3,
   },
   pulseMidRow: {
@@ -384,19 +472,16 @@ const styles = StyleSheet.create({
   pulseArrow: {
     fontSize: 28,
     fontWeight: '700',
-    color: C.green,
     lineHeight: 46,
   },
   pulseValue: {
     fontSize: 42,
     fontWeight: '800',
-    color: C.text,
     lineHeight: 48,
     letterSpacing: -1,
   },
   pulseDrivers: {
     fontSize: 12,
-    color: C.textSub,
     marginBottom: 16,
   },
   sparklineContainer: {
@@ -408,7 +493,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: C.textSub,
     letterSpacing: 1.2,
     marginBottom: 12,
   },
@@ -419,42 +503,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 0,
   },
-  indicatorCard: {
-    flex: 1,
-    marginBottom: 12,
-    padding: 14,
-  },
-  indicatorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  indicatorIcon: {
-    fontSize: 14,
-  },
-  indicatorLabel: {
-    fontSize: 12,
-    color: C.textSub,
-    fontWeight: '500',
-  },
-  indicatorValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: C.text,
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  trendPill: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  trendText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
+
 
   // Insight
   insightCard: {
@@ -477,21 +526,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: C.green,
   },
   insightLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: C.green,
     letterSpacing: 1.1,
-  },
-  insightClose: {
-    fontSize: 14,
-    color: C.textDim,
   },
   insightText: {
     fontSize: 14,
-    color: C.textSub,
     lineHeight: 22,
   },
   insightReadMore: {
@@ -500,7 +542,6 @@ const styles = StyleSheet.create({
   },
   insightReadMoreText: {
     fontSize: 13,
-    color: C.green,
     fontWeight: '600',
   },
 
@@ -516,11 +557,26 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: C.cardBorder,
   },
   dotActive: {
     width: 18,
-    backgroundColor: C.green,
     borderRadius: 3,
+  },
+
+  // Modal
+  modalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(36, 48, 68, 0.4)',
+  },
+  modalRowLabel: {
+    fontSize: 15,
+  },
+  modalRowValue: {
+    fontSize: 15,
+    fontWeight: '600',
   }
 });

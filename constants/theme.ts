@@ -18,6 +18,10 @@ export interface ThemeColors {
   shadow: string;
   greenDim: string;
   greenGlow: string;
+  greenStartFillColor: string;
+  greenEndFillColor: string;
+  redStartFillColor: string;
+  redEndFillColor: string;
 }
 
 export const themes: Record<ThemeMode, ThemeColors> = {
@@ -38,7 +42,11 @@ export const themes: Record<ThemeMode, ThemeColors> = {
     overlay: 'rgba(11,15,20,0.72)',
     shadow: 'rgba(0, 0, 0, 0.32)',
     greenDim: 'rgba(11,143,77,0.15)',
-    greenGlow: 'rgba(11,143,77,0.35)'
+    greenGlow: 'rgba(11,143,77,0.35)',
+    greenStartFillColor: 'rgba(11,143,77,0.4)',
+    greenEndFillColor: 'rgba(11,143,77,0)',
+    redStartFillColor: 'rgba(240,91,91,0.4)',
+    redEndFillColor: 'rgba(240,91,91,0)',
   },
   light: {
     background: '#F5F7FA',
@@ -57,7 +65,11 @@ export const themes: Record<ThemeMode, ThemeColors> = {
     overlay: 'rgba(255,255,255,0.72)',
     shadow: 'rgba(15, 23, 42, 0.08)',
     greenDim: 'rgba(11,143,77,0.15)',
-    greenGlow: 'rgba(11,143,77,0.35)'
+    greenGlow: 'rgba(11,143,77,0.35)',
+    greenStartFillColor: 'rgba(11,143,77,0.4)',
+    greenEndFillColor: 'rgba(11,143,77,0)',
+    redStartFillColor: 'rgba(240,91,91,0.4)',
+    redEndFillColor: 'rgba(240,91,91,0)',
   },
 };
 
