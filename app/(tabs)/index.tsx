@@ -10,10 +10,10 @@ import { Text, View } from '@gluestack-ui/themed';
 import { useDashboard, type DashboardFoodBasket } from '@/hooks/use-dashboard';
 import { Spinner } from '@/components/ui/spinner';
 import { useTheme } from '@/contexts/theme-context';
-import Card from '@/components/ui/home/card';
-import SparklineChart from '@/components/ui/home/sparklineChart';
-import IndicatorCard from '@/components/ui/home/indicatorCard';
-import BreakdownModal from '@/components/ui/home/breakdownModal';
+import Card from '@/components/home/card';
+import SparklineChart from '@/components/home/sparklineChart';
+import IndicatorCard from '@/components/home/indicatorCard';
+import BreakdownModal from '@/components/home/breakdownModal';
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
@@ -55,150 +55,119 @@ export default function HomeScreen() {
     );
   }
 
-  const getTrend = (latest: number, prev?: number) => {
-    if (!prev || prev === 0) return { trendStr: '-', positive: true, pct: 0 };
-    const diff = latest - prev;
-    const pct = (diff / prev) * 100;
-    const isDown = pct <= 0;
-    const trendStr = `${isDown ? '↓' : '↑'} ${Math.abs(pct).toFixed(1)}%`;
-    return { trendStr, positive: isDown, pct };
-  };
+  // ── Helper: convert backend trend to display props ────────────────────────
+  const trendProps = (trend: { trend_str: string; direction: string; percent: number }) => ({
+    trendStr: trend.trend_str,
+    positive: trend.direction === 'down' || trend.direction === 'stable',
+    pct: trend.percent,
+  });
 
-  const getFoodTotal = (fb?: DashboardFoodBasket) => {
-    if (!fb) return 0;
-    return (
-      fb.maize_flour + fb.wheat_flour + fb.rice + fb.sugar + fb.cooking_oil +
-      fb.milk + fb.eggs + fb.bread + fb.tomatoes + fb.onions
-    );
-  };
+  // ── Destructure flat data from backend ────────────────────────────────────
+  const { fuel, forex, food_basket: food, overall_metrics: metrics } = dashboard;
 
-  const latestFuel = dashboard.fuel?.[0];
-  const prevFuel = dashboard.fuel?.[1];
-  const fuelTrend = getTrend(latestFuel?.petrol_per_litre, prevFuel?.petrol_per_litre);
+  // Food basket total
+  const foodTotal =
+    food.maize_flour + food.wheat_flour + food.rice + food.sugar + food.cooking_oil +
+    food.milk + food.eggs + food.bread + food.tomatoes + food.onions;
 
-  const latestForex = dashboard.forex?.[0];
-  const prevForex = dashboard.forex?.[1];
-  const forexTrend = getTrend(latestForex?.usd_kes, prevForex?.usd_kes);
-
-  const latestFood = dashboard.food_basket?.[0];
-  const prevFood = dashboard.food_basket?.[1];
-  const currentFoodTotal = getFoodTotal(latestFood);
-  const prevFoodTotal = getFoodTotal(prevFood);
-  const foodTrend = getTrend(currentFoodTotal, prevFoodTotal);
-
-  const avgPct = (fuelTrend.pct + forexTrend.pct + foodTrend.pct) / 3;
-  const pulseIsDown = avgPct <= 0;
+  // ── Overall pulse values (from backend) ───────────────────────────────────
+  const overallPct = metrics.overall_avg_pct;
+  const pulseIsDown = overallPct <= 0;
   const pulseArrow = pulseIsDown ? '↓' : '↑';
 
-  // Dynamic cost of living high impact drivers (categories that increased in price)
-  const driverPairs = [
-    { label: 'Fuel', pct: fuelTrend.pct },
-    { label: 'Forex', pct: forexTrend.pct },
-    { label: 'Food', pct: foodTrend.pct }
-  ].sort((a, b) => b.pct - a.pct);
-
-  const highImpactDrivers = driverPairs
-    .filter(d => d.pct > 0)
-    .map(d => d.label);
-
-  const highImpactStr = highImpactDrivers.length > 0
-    ? highImpactDrivers.join(', ')
+  // High impact drivers from backend
+  const highImpactUp = metrics.high_impact_drivers
+    .filter(d => d.direction === 'up')
+    .map(d => d.item.replace('_', ' '));
+  const highImpactStr = highImpactUp.length > 0
+    ? highImpactUp.slice(0, 3).join(', ')
     : 'None (Stable)';
 
-  // Generate dynamic sparkline data with custom interpolation & micro-fluctuations
-  const generateSparkData = () => {
-    const points: number[] = [];
-    const steps = 10;
-    const latestCombined = (latestFuel?.petrol_per_litre || 0) + (latestForex?.usd_kes || 0) + currentFoodTotal;
-    const prevCombined = (prevFuel?.petrol_per_litre || latestFuel?.petrol_per_litre || 0) +
-      (prevForex?.usd_kes || latestForex?.usd_kes || 0) +
-      (prevFoodTotal || currentFoodTotal || 0);
-
-    for (let i = 0; i < steps; i++) {
-      const t = i / (steps - 1);
-      const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      const base = prevCombined + (latestCombined - prevCombined) * easeT;
-      const fluctuation = Math.sin(t * Math.PI * 3.5) * (base * 0.006) + Math.cos(t * Math.PI * 1.5) * (base * 0.003);
-      points.push(base + fluctuation);
-    }
-    return points;
-  };
-
-  const sparkData = generateSparkData();
+  // Weekly chart data from backend
+  const sparkData = metrics.weekly_chart_data.map(w => w.avg_pct);
 
   // Food basket configuration for breakdown listing
   const foodItemsConfig = [
-    { key: 'maize_flour', label: 'Maize Flour', icon: '🌽' },
-    { key: 'wheat_flour', label: 'Wheat Flour', icon: '🌾' },
-    { key: 'rice', label: 'Rice', icon: '🍚' },
-    { key: 'sugar', label: 'Sugar', icon: '🍬' },
-    { key: 'cooking_oil', label: 'Cooking Oil', icon: '🍾' },
-    { key: 'milk', label: 'Milk', icon: '🥛' },
-    { key: 'eggs', label: 'Eggs', icon: '🥚' },
-    { key: 'bread', label: 'Bread', icon: '🍞' },
-    { key: 'tomatoes', label: 'Tomatoes', icon: '🍅' },
-    { key: 'onions', label: 'Onions', icon: '🧅' },
+    { key: 'maize_flour', trendKey: 'maize_flour_trend', label: 'Maize Flour', icon: '🌽' },
+    { key: 'wheat_flour', trendKey: 'wheat_flour_trend', label: 'Wheat Flour', icon: '🌾' },
+    { key: 'rice', trendKey: 'rice_trend', label: 'Rice', icon: '🍚' },
+    { key: 'sugar', trendKey: 'sugar_trend', label: 'Sugar', icon: '🍬' },
+    { key: 'cooking_oil', trendKey: 'cooking_oil_trend', label: 'Cooking Oil', icon: '🍾' },
+    { key: 'milk', trendKey: 'milk_trend', label: 'Milk', icon: '🥛' },
+    { key: 'eggs', trendKey: 'eggs_trend', label: 'Eggs', icon: '🥚' },
+    { key: 'bread', trendKey: 'bread_trend', label: 'Bread', icon: '🍞' },
+    { key: 'tomatoes', trendKey: 'tomatoes_trend', label: 'Tomatoes', icon: '🍅' },
+    { key: 'onions', trendKey: 'onions_trend', label: 'Onions', icon: '🧅' },
   ] as const;
 
   // ── Cycling data for indicator cards ──────────────────────────────────────
-  const dieselTrend = getTrend(latestFuel?.diesel_per_litre, prevFuel?.diesel_per_litre);
-  const keroseneTrend = getTrend(latestFuel?.kerosene_per_litre, prevFuel?.kerosene_per_litre);
+  const petrolTrend = trendProps(fuel.petrol_trend);
+  const dieselTrend = trendProps(fuel.diesel_trend);
+  const keroseneTrend = trendProps(fuel.kerosene_trend);
 
-  const fuelCycleData = latestFuel ? [
-    { label: 'Petrol / Litre', value: `KES ${latestFuel.petrol_per_litre?.toFixed(2)}`, trend: fuelTrend.trendStr, trendLabel: 'vs last week', positive: fuelTrend.positive },
-    { label: 'Diesel / Litre', value: `KES ${latestFuel.diesel_per_litre?.toFixed(2)}`, trend: dieselTrend.trendStr, trendLabel: 'vs last week', positive: dieselTrend.positive },
-    { label: 'Kerosene / Litre', value: `KES ${latestFuel.kerosene_per_litre?.toFixed(2)}`, trend: keroseneTrend.trendStr, trendLabel: 'vs last week', positive: keroseneTrend.positive },
-  ] : undefined;
+  const fuelCycleData = [
+    { label: 'Petrol / Litre', value: `KES ${fuel.petrol_per_litre.toFixed(2)}`, trend: petrolTrend.trendStr, trendLabel: 'vs last week', positive: petrolTrend.positive },
+    { label: 'Diesel / Litre', value: `KES ${fuel.diesel_per_litre.toFixed(2)}`, trend: dieselTrend.trendStr, trendLabel: 'vs last week', positive: dieselTrend.positive },
+    { label: 'Kerosene / Litre', value: `KES ${fuel.kerosene_per_litre.toFixed(2)}`, trend: keroseneTrend.trendStr, trendLabel: 'vs last week', positive: keroseneTrend.positive },
+  ];
 
-  const eurTrend = getTrend(latestForex?.eur_kes, prevForex?.eur_kes);
-  const gbpTrend = getTrend(latestForex?.gbp_kes, prevForex?.gbp_kes);
+  const usdTrend = trendProps(forex.usd_kes_trend);
+  const eurTrend = trendProps(forex.eur_kes_trend);
+  const gbpTrend = trendProps(forex.gbp_kes_trend);
 
-  const forexCycleData = latestForex ? [
-    { label: 'USD / KES', value: latestForex.usd_kes?.toFixed(2), trend: forexTrend.trendStr, trendLabel: 'vs last week', positive: forexTrend.positive },
-    { label: 'EUR / KES', value: latestForex.eur_kes?.toFixed(2), trend: eurTrend.trendStr, trendLabel: 'vs last week', positive: eurTrend.positive },
-    { label: 'GBP / KES', value: latestForex.gbp_kes?.toFixed(2), trend: gbpTrend.trendStr, trendLabel: 'vs last week', positive: gbpTrend.positive },
-  ] : undefined;
+  const forexCycleData = [
+    { label: 'USD / KES', value: forex.usd_kes.toFixed(2), trend: usdTrend.trendStr, trendLabel: 'vs last week', positive: usdTrend.positive },
+    { label: 'EUR / KES', value: forex.eur_kes.toFixed(2), trend: eurTrend.trendStr, trendLabel: 'vs last week', positive: eurTrend.positive },
+    { label: 'GBP / KES', value: forex.gbp_kes.toFixed(2), trend: gbpTrend.trendStr, trendLabel: 'vs last week', positive: gbpTrend.positive },
+  ];
 
   const foodCycleItems = [
-    { key: 'maize_flour', label: 'Maize Flour' },
-    { key: 'rice', label: 'Rice' },
-    { key: 'sugar', label: 'Sugar' },
-    { key: 'cooking_oil', label: 'Cooking Oil' },
-    { key: 'milk', label: 'Milk' },
+    { key: 'maize_flour', trendKey: 'maize_flour_trend', label: 'Maize Flour' },
+    { key: 'rice', trendKey: 'rice_trend', label: 'Rice' },
+    { key: 'sugar', trendKey: 'sugar_trend', label: 'Sugar' },
+    { key: 'cooking_oil', trendKey: 'cooking_oil_trend', label: 'Cooking Oil' },
+    { key: 'milk', trendKey: 'milk_trend', label: 'Milk' },
+    { key: 'eggs', trendKey: 'eggs_trend', label: 'Eggs' },
+    { key: 'bread', trendKey: 'bread_trend', label: 'Bread' },
+    { key: 'tomatoes', trendKey: 'tomatoes_trend', label: 'Tomatoes' },
+    { key: 'onions', trendKey: 'onions_trend', label: 'Onions' },
+    { key: 'wheat_flour', trendKey: 'wheat_flour_trend', label: 'Wheat Flour' },
+
   ] as const;
 
-  const foodCycleData = latestFood ? [
-    // First entry: overall basket total
+  const foodOverallPct = metrics.food_avg_pct;
+  const foodOverallPositive = foodOverallPct <= 0;
+  const foodOverallTrendStr = foodOverallPct === 0
+    ? '- 0.0%'
+    : `${foodOverallPct < 0 ? '↓' : '↑'} ${Math.abs(foodOverallPct).toFixed(1)}%`;
+
+  const foodCycleData = [
     {
       label: 'Food Basket',
-      value: `KES ${currentFoodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`,
-      trend: foodTrend.trendStr,
+      value: `KES ${foodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`,
+      trend: foodOverallTrendStr,
       trendLabel: 'vs last week',
-      positive: foodTrend.positive,
+      positive: foodOverallPositive,
     },
-    // Then cycle through key individual items
     ...foodCycleItems.map((item) => {
-      const latVal = latestFood[item.key as keyof DashboardFoodBasket] as number;
-      const prevVal = prevFood ? (prevFood[item.key as keyof DashboardFoodBasket] as number) : undefined;
-      const itemTrend = getTrend(latVal, prevVal);
+      const val = food[item.key as keyof DashboardFoodBasket] as number;
+      const trend = trendProps(food[item.trendKey as keyof DashboardFoodBasket] as any);
       return {
         label: item.label,
-        value: `KES ${latVal?.toFixed(2) || '0.00'}`,
-        trend: itemTrend.trendStr,
+        value: `KES ${val?.toFixed(2) || '0.00'}`,
+        trend: trend.trendStr,
         trendLabel: 'vs last week',
-        positive: itemTrend.positive,
+        positive: trend.positive,
       };
     }),
-  ] : undefined;
+  ];
 
-  // ── Simulated CPI / Inflation Calculation ─────────────────────────────────
-  const foodWeight = 0.50; // 50%
-  const fuelWeight = 0.30; // 30%
-  const forexWeight = 0.20; // 20%
-  
-  const estimatedWeeklyInflation = (foodTrend.pct * foodWeight) + (fuelTrend.pct * fuelWeight) + (forexTrend.pct * forexWeight);
+  // ── Estimated Inflation (weighted from backend pcts) ──────────────────────
+  const estimatedWeeklyInflation = overallPct;
   const isInflationDown = estimatedWeeklyInflation <= 0;
-  const inflationTrendStr = `${isInflationDown ? '↓' : '↑'} ${Math.abs(estimatedWeeklyInflation).toFixed(2)}%`;
+  const inflationTrendStr = estimatedWeeklyInflation === 0
+    ? '- 0.0%'
+    : `${isInflationDown ? '↓' : '↑'} ${Math.abs(estimatedWeeklyInflation).toFixed(2)}%`;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top']}>
@@ -227,24 +196,26 @@ export default function HomeScreen() {
 
           {/* ── Cost of Living Pulse ──────────────────────────────────────── */}
           <Card style={[styles.pulseCard, {
-            backgroundColor: theme.surface,
-            borderColor: theme.cardBorder
+            backgroundColor: pulseIsDown ? 'rgba(11, 143, 77, 0.05)' : 'rgba(235, 87, 87, 0.05)',
+            borderColor: pulseIsDown ? 'rgba(11, 143, 77, 0.3)' : 'rgba(235, 87, 87, 0.3)',
+            borderWidth: 1.5,
+            padding: 16,
           }]}>
-            <View style={styles.pulseTopRow}>
-              <View>
-                <Text style={styles.pulseHeading} color={theme.text}>COST OF LIVING PULSE</Text>
-                <Text style={styles.pulseSubheading} color={theme.textDim}>Overall change this week</Text>
+            <SparklineChart data={sparkData} positive={pulseIsDown} />
+            <View>
+              <View style={styles.pulseTopRow}>
+                <View>
+                  <Text style={styles.pulseHeading} color={theme.text}>COST OF LIVING PULSE</Text>
+                  <Text style={styles.pulseSubheading} color={theme.textDim}>Overall change this week</Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.pulseMidRow}>
-              <Text style={[styles.pulseArrow, {
-                color: pulseIsDown ? theme.primary : theme.danger
-              }]}>{pulseArrow}</Text>
-              <Text style={styles.pulseValue} color={theme.text}>{Math.abs(avgPct).toFixed(1)}%</Text>
-            </View>
-            <Text style={styles.pulseDrivers} color={theme.textDim}>High impact: {highImpactStr}</Text>
-            <View style={styles.sparklineContainer}>
-              <SparklineChart data={sparkData} positive={pulseIsDown} />
+              <View style={styles.pulseMidRow}>
+                <Text style={[styles.pulseArrow, {
+                  color: pulseIsDown ? theme.primary : theme.danger
+                }]}>{pulseArrow}</Text>
+                <Text style={styles.pulseValue} color={theme.text}>{Math.abs(overallPct).toFixed(1)}%</Text>
+              </View>
+              <Text style={styles.pulseDrivers} color={theme.textDim}>High impact: {highImpactStr}</Text>
             </View>
           </Card>
 
@@ -256,20 +227,20 @@ export default function HomeScreen() {
             <IndicatorCard
               icon="⛽"
               label="Petrol / Litre"
-              value={`KES ${latestFuel?.petrol_per_litre?.toFixed(2) || '0.00'}`}
-              trend={fuelTrend.trendStr}
+              value={`KES ${fuel.petrol_per_litre.toFixed(2)}`}
+              trend={petrolTrend.trendStr}
               trendLabel="vs last week"
-              positive={fuelTrend.positive}
+              positive={petrolTrend.positive}
               onPress={() => setSelectedIndicator('fuel')}
               cycleData={fuelCycleData}
             />
             <IndicatorCard
               icon="💵"
               label="USD / KES"
-              value={latestForex?.usd_kes?.toFixed(2) || '0.00'}
-              trend={forexTrend.trendStr}
+              value={forex.usd_kes.toFixed(2)}
+              trend={usdTrend.trendStr}
               trendLabel="vs last week"
-              positive={forexTrend.positive}
+              positive={usdTrend.positive}
               onPress={() => setSelectedIndicator('forex')}
               cycleData={forexCycleData}
             />
@@ -281,10 +252,10 @@ export default function HomeScreen() {
               <IndicatorCard
                 icon="🛒"
                 label="Food Basket"
-                value={`KES ${currentFoodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
-                trend={foodTrend.trendStr}
+                value={`KES ${foodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
+                trend={foodOverallTrendStr}
                 trendLabel="vs last week"
-                positive={foodTrend.positive}
+                positive={foodOverallPositive}
                 onPress={() => setSelectedIndicator('food')}
                 cycleData={foodCycleData}
               />
@@ -329,14 +300,14 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Detail Breakdown Modals ────────────────────────────────────── */}
-          {selectedIndicator === 'food' && latestFood && (
+          {selectedIndicator === 'food' && food && (
             <BreakdownModal
               visible={true}
               title="Food Basket Items"
               onClose={() => setSelectedIndicator(null)}
             >
               {foodItemsConfig.map((item) => {
-                const val = latestFood[item.key as keyof DashboardFoodBasket];
+                const val = food[item.key as keyof DashboardFoodBasket];
                 return (
                   <View key={item.key} style={styles.modalRow}>
                     <Text style={styles.modalRowLabel} color={theme.textDim}>
@@ -351,7 +322,7 @@ export default function HomeScreen() {
             </BreakdownModal>
           )}
 
-          {selectedIndicator === 'fuel' && latestFuel && (
+          {selectedIndicator === 'fuel' && fuel && (
             <BreakdownModal
               visible={true}
               title="Fuel Prices Breakdown"
@@ -359,25 +330,25 @@ export default function HomeScreen() {
             >
               <View style={styles.modalRow}>
                 <Text style={styles.modalRowLabel} color={theme.textDim}>⛽ Petrol per Litre</Text>
-                <Text style={styles.modalRowValue} color={theme.text}>KES {latestFuel.petrol_per_litre.toFixed(2)}</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>KES {fuel.petrol_per_litre.toFixed(2)}</Text>
               </View>
               <View style={styles.modalRow}>
                 <Text style={styles.modalRowLabel} color={theme.textDim}>🚛 Diesel per Litre</Text>
-                <Text style={styles.modalRowValue} color={theme.text}>KES {latestFuel.diesel_per_litre.toFixed(2)}</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>KES {fuel.diesel_per_litre.toFixed(2)}</Text>
               </View>
               <View style={styles.modalRow}>
                 <Text style={styles.modalRowLabel} color={theme.textDim}>🪔 Kerosene per Litre</Text>
-                <Text style={styles.modalRowValue} color={theme.text}>KES {latestFuel.kerosene_per_litre.toFixed(2)}</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>KES {fuel.kerosene_per_litre.toFixed(2)}</Text>
               </View>
               <View style={{ marginTop: 12 }}>
                 <Text style={{ fontSize: 12, color: theme.textDim, textAlign: 'center' }}>
-                  Source: {latestFuel.source} ({latestFuel.location})
+                  Source: {fuel.source} ({fuel.location})
                 </Text>
               </View>
             </BreakdownModal>
           )}
 
-          {selectedIndicator === 'forex' && latestForex && (
+          {selectedIndicator === 'forex' && forex && (
             <BreakdownModal
               visible={true}
               title="Exchange Rates Breakdown"
@@ -385,19 +356,19 @@ export default function HomeScreen() {
             >
               <View style={styles.modalRow}>
                 <Text style={styles.modalRowLabel} color={theme.textDim}>🇺🇸 USD / KES</Text>
-                <Text style={styles.modalRowValue} color={theme.text}>{latestForex.usd_kes.toFixed(2)} KES</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>{forex.usd_kes.toFixed(2)} KES</Text>
               </View>
               <View style={styles.modalRow}>
                 <Text style={styles.modalRowLabel} color={theme.textDim}>🇪🇺 EUR / KES</Text>
-                <Text style={styles.modalRowValue} color={theme.text}>{latestForex.eur_kes.toFixed(2)} KES</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>{forex.eur_kes.toFixed(2)} KES</Text>
               </View>
               <View style={styles.modalRow}>
                 <Text style={styles.modalRowLabel} color={theme.textDim}>🇬🇧 GBP / KES</Text>
-                <Text style={styles.modalRowValue} color={theme.text}>{latestForex.gbp_kes.toFixed(2)} KES</Text>
+                <Text style={styles.modalRowValue} color={theme.text}>{forex.gbp_kes.toFixed(2)} KES</Text>
               </View>
               <View style={{ marginTop: 12 }}>
                 <Text style={{ fontSize: 12, color: theme.textDim, textAlign: 'center' }}>
-                  Source: {latestForex.source}
+                  Source: {forex.source}
                 </Text>
               </View>
             </BreakdownModal>
@@ -412,8 +383,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 100,
+    paddingVertical: 8
   },
 
   // Header
@@ -482,11 +452,7 @@ const styles = StyleSheet.create({
   },
   pulseDrivers: {
     fontSize: 12,
-    marginBottom: 16,
-  },
-  sparklineContainer: {
-    marginHorizontal: -18,
-    marginBottom: -18,
+    marginBottom: 4,
   },
 
   // Section label
