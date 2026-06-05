@@ -14,6 +14,7 @@ import Card from '@/components/home/card';
 import SparklineChart from '@/components/home/sparklineChart';
 import IndicatorCard from '@/components/home/indicatorCard';
 import BreakdownModal from '@/components/home/breakdownModal';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
@@ -190,7 +191,7 @@ export default function HomeScreen() {
                 borderColor: theme.cardBorder
               }]}
               activeOpacity={0.7}>
-              <Text style={styles.bellIcon}>🔔</Text>
+              <MaterialIcons name="notifications" size={24} color={theme.textDim} />
             </TouchableOpacity>
           </View>
 
