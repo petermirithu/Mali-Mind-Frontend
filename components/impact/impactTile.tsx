@@ -4,9 +4,9 @@ import { StyleSheet } from "react-native";
 
 const getTileColor = (category: string, theme: any) => {
     const TILE_COLORS: Record<string, string> = {
-        'Transport': theme.danger,
+        'Transport': theme.success,
         'Food & Groceries': theme.warning,
-        'Utilities': theme.warning,
+        'Utilities': theme.danger,
         'Other': theme.accent,
     };
     return TILE_COLORS[category] ?? theme.accent;

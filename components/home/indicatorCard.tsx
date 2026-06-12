@@ -10,6 +10,7 @@ export type CycleEntry = {
     trend: string;
     trendLabel: string;
     positive: boolean;
+    color: string;
 };
 
 export default function IndicatorCard({
@@ -21,6 +22,7 @@ export default function IndicatorCard({
     positive = false,
     onPress,
     cycleData,
+    color
 }: {
     icon: string;
     label: string;
@@ -30,6 +32,7 @@ export default function IndicatorCard({
     positive?: boolean;
     onPress?: () => void;
     cycleData?: CycleEntry[];
+    color?: string;
 }) {
     const { theme } = useTheme();
     const [activeIndex, setActiveIndex] = useState(0);
@@ -62,12 +65,14 @@ export default function IndicatorCard({
     }, [hasCycle, cycleData?.length]);
 
     // Resolve current display values
-    const current = hasCycle ? cycleData![activeIndex] : { label, value, trend, trendLabel, positive };
+    const current = hasCycle ? cycleData![activeIndex] : { label, value, trend, trendLabel, positive, color };
 
     const content = (
         <>
             <View style={styles.indicatorHeader}>
-                <Text style={styles.indicatorIcon}>{icon}</Text>
+                <View style={[styles.iconBox, { backgroundColor: `${current?.color || color}18` }]}>
+                    <Text style={styles.indicatorIcon}>{icon}</Text>
+                </View>
                 <Animated.Text
                     style={[
                         styles.indicatorLabel,
@@ -89,12 +94,12 @@ export default function IndicatorCard({
                 style={[
                     styles.trendPill,
                     {
-                        backgroundColor: current.positive ? theme.primaryDim : theme.dangerDim,
+                        backgroundColor: `${current.color}30`,
                         opacity: hasCycle ? fadeAnim : 1,
                     },
                 ]}
             >
-                <Text style={[styles.trendText, { color: current.positive ? theme.primary : theme.danger }]}>
+                <Text style={[styles.trendText, { color: current.color }]}>
                     {current.trend} {current.trendLabel}
                 </Text>
             </Animated.View>
@@ -132,7 +137,12 @@ export default function IndicatorCard({
     if (onPress) {
         return (
             <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.indicatorCardWrapper}>
-                <Card style={styles.indicatorCardInner}>
+                <Card style={[styles.indicatorCardInner,
+                {
+                    borderWidth: 1,
+                    borderColor: `${current?.color || color || theme.cardBorder}30`,
+                }
+                ]}>
                     {content}
                 </Card>
             </TouchableOpacity>
@@ -140,7 +150,7 @@ export default function IndicatorCard({
     }
 
     return (
-        <Card style={styles.indicatorCard}>
+        <Card style={[styles.indicatorCard, { borderColor: `${current?.color || color}30` }]} >
             {content}
         </Card>
     );
@@ -164,6 +174,7 @@ const styles = StyleSheet.create({
         minHeight: CARD_MIN_HEIGHT,
         marginBottom: 12,
         padding: 14,
+        borderWidth: 1,
     },
     indicatorHeader: {
         flexDirection: 'row',
@@ -171,8 +182,15 @@ const styles = StyleSheet.create({
         gap: 6,
         marginBottom: 8,
     },
+    iconBox: {
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     indicatorIcon: {
-        fontSize: 14,
+        fontSize: 13,
     },
     indicatorLabel: {
         fontSize: 12,

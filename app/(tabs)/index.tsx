@@ -101,15 +101,21 @@ export default function HomeScreen() {
     { key: 'onions', trendKey: 'onions_trend', label: 'Onions', icon: '🧅' },
   ] as const;
 
+  const getTrendColor = (pct: number) => {
+    if (pct < 0) return theme.accent; // prices dropped
+    if (pct === 0) return theme.warning; // stable
+    return theme.danger; // increased
+  };
+
   // ── Cycling data for indicator cards ──────────────────────────────────────
   const petrolTrend = trendProps(fuel.petrol_trend);
   const dieselTrend = trendProps(fuel.diesel_trend);
   const keroseneTrend = trendProps(fuel.kerosene_trend);
 
   const fuelCycleData = [
-    { label: 'Petrol / Litre', value: `KES ${fuel.petrol_per_litre.toFixed(2)}`, trend: petrolTrend.trendStr, trendLabel: 'vs last week', positive: petrolTrend.positive },
-    { label: 'Diesel / Litre', value: `KES ${fuel.diesel_per_litre.toFixed(2)}`, trend: dieselTrend.trendStr, trendLabel: 'vs last week', positive: dieselTrend.positive },
-    { label: 'Kerosene / Litre', value: `KES ${fuel.kerosene_per_litre.toFixed(2)}`, trend: keroseneTrend.trendStr, trendLabel: 'vs last week', positive: keroseneTrend.positive },
+    { label: 'Petrol / Litre', value: `KES ${fuel.petrol_per_litre.toFixed(2)}`, trend: petrolTrend.trendStr, trendLabel: 'vs last week', positive: petrolTrend.positive, color: getTrendColor(petrolTrend.pct) },
+    { label: 'Diesel / Litre', value: `KES ${fuel.diesel_per_litre.toFixed(2)}`, trend: dieselTrend.trendStr, trendLabel: 'vs last week', positive: dieselTrend.positive, color: getTrendColor(dieselTrend.pct) },
+    { label: 'Kerosene / Litre', value: `KES ${fuel.kerosene_per_litre.toFixed(2)}`, trend: keroseneTrend.trendStr, trendLabel: 'vs last week', positive: keroseneTrend.positive, color: getTrendColor(keroseneTrend.pct) },
   ];
 
   const usdTrend = trendProps(forex.usd_kes_trend);
@@ -117,9 +123,9 @@ export default function HomeScreen() {
   const gbpTrend = trendProps(forex.gbp_kes_trend);
 
   const forexCycleData = [
-    { label: 'USD / KES', value: forex.usd_kes.toFixed(2), trend: usdTrend.trendStr, trendLabel: 'vs last week', positive: usdTrend.positive },
-    { label: 'EUR / KES', value: forex.eur_kes.toFixed(2), trend: eurTrend.trendStr, trendLabel: 'vs last week', positive: eurTrend.positive },
-    { label: 'GBP / KES', value: forex.gbp_kes.toFixed(2), trend: gbpTrend.trendStr, trendLabel: 'vs last week', positive: gbpTrend.positive },
+    { label: 'USD / KES', value: forex.usd_kes.toFixed(2), trend: usdTrend.trendStr, trendLabel: 'vs last week', positive: usdTrend.positive, color: getTrendColor(usdTrend.pct) },
+    { label: 'EUR / KES', value: forex.eur_kes.toFixed(2), trend: eurTrend.trendStr, trendLabel: 'vs last week', positive: eurTrend.positive, color: getTrendColor(eurTrend.pct) },
+    { label: 'GBP / KES', value: forex.gbp_kes.toFixed(2), trend: gbpTrend.trendStr, trendLabel: 'vs last week', positive: gbpTrend.positive, color: getTrendColor(gbpTrend.pct) },
   ];
 
   const foodCycleItems = [
@@ -149,6 +155,7 @@ export default function HomeScreen() {
       trend: foodOverallTrendStr,
       trendLabel: 'vs last week',
       positive: foodOverallPositive,
+      color: getTrendColor(foodOverallPct),
     },
     ...foodCycleItems.map((item) => {
       const val = food[item.key as keyof DashboardFoodBasket] as number;
@@ -159,6 +166,7 @@ export default function HomeScreen() {
         trend: trend.trendStr,
         trendLabel: 'vs last week',
         positive: trend.positive,
+        color: getTrendColor(trend.pct),
       };
     }),
   ];
@@ -226,6 +234,7 @@ export default function HomeScreen() {
           {/* ── Grid row 1 ────────────────────────────────────────────────── */}
           <View style={styles.grid}>
             <IndicatorCard
+              key={"Fuel"}
               icon="⛽"
               label="Petrol / Litre"
               value={`KES ${fuel.petrol_per_litre.toFixed(2)}`}
@@ -233,9 +242,10 @@ export default function HomeScreen() {
               trendLabel="vs last week"
               positive={petrolTrend.positive}
               onPress={() => setSelectedIndicator('fuel')}
-              cycleData={fuelCycleData}
+              cycleData={fuelCycleData}              
             />
             <IndicatorCard
+              key={"Forex"}
               icon="💵"
               label="USD / KES"
               value={forex.usd_kes.toFixed(2)}
@@ -243,7 +253,7 @@ export default function HomeScreen() {
               trendLabel="vs last week"
               positive={usdTrend.positive}
               onPress={() => setSelectedIndicator('forex')}
-              cycleData={forexCycleData}
+              cycleData={forexCycleData}              
             />
           </View>
 
@@ -251,6 +261,7 @@ export default function HomeScreen() {
           <View style={styles.grid}>
             <View style={{ width: 175 }}>
               <IndicatorCard
+                key={"Food Basket"}
                 icon="🛒"
                 label="Food Basket"
                 value={`KES ${foodTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
@@ -258,16 +269,18 @@ export default function HomeScreen() {
                 trendLabel="vs last week"
                 positive={foodOverallPositive}
                 onPress={() => setSelectedIndicator('food')}
-                cycleData={foodCycleData}
+                cycleData={foodCycleData}                
               />
             </View>
             <IndicatorCard
+              key={"Inflation"}
               icon="📈"
               label="Est. Inflation"
               value={`${estimatedWeeklyInflation > 0 ? '+' : ''}${estimatedWeeklyInflation.toFixed(2)}%`}
               trend={inflationTrendStr}
               trendLabel="vs last week"
-              positive={isInflationDown}
+              positive={isInflationDown}              
+              color={getTrendColor(estimatedWeeklyInflation)}
             />
           </View>
 
