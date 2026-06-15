@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   ScrollView,
   StyleSheet,
@@ -15,10 +16,12 @@ import SparklineChart from '@/components/home/sparklineChart';
 import IndicatorCard from '@/components/home/indicatorCard';
 import BreakdownModal from '@/components/home/breakdownModal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const { theme } = useTheme();
+  const router = useRouter();
 
   const { data: dashboard, isLoading } = useDashboard();
   const [selectedIndicator, setSelectedIndicator] = useState<'food' | 'fuel' | 'forex' | null>(null);
@@ -46,11 +49,26 @@ export default function HomeScreen() {
   }, []);
 
   if (isLoading || !dashboard) {
-    return (
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Spinner size={"large"} color={theme.primary} />
-          <Text style={{ color: theme.textDim, marginTop: 20 }}>Loading...</Text>
+    return (      
+      <SafeAreaView style={{flex:1, backgroundColor: theme.background}} edges={['top']}>
+        <View style={[styles.header, {paddingHorizontal: 16, paddingVertical: 14,}]}>
+            <View>
+              <Text style={styles.greeting} color={theme.text}>Hello, Alex 👋</Text>
+              <Text style={styles.date} color={theme.textDim}>{today}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.bellBtn, {
+                backgroundColor: theme.card,
+                borderColor: theme.cardBorder
+              }]}
+              disabled={true}
+              activeOpacity={0.7}>
+              <MaterialIcons name="notifications" size={24} color={theme.textDim} />
+            </TouchableOpacity>
+          </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={{ color: theme.textDim, marginTop: 12, fontSize: 14 }}>Loading ...</Text>
         </View>
       </SafeAreaView>
     );
@@ -198,6 +216,7 @@ export default function HomeScreen() {
                 backgroundColor: theme.card,
                 borderColor: theme.cardBorder
               }]}
+              onPress={() => router.push('/notifications')}
               activeOpacity={0.7}>
               <MaterialIcons name="notifications" size={24} color={theme.textDim} />
             </TouchableOpacity>
@@ -242,7 +261,7 @@ export default function HomeScreen() {
               trendLabel="vs last week"
               positive={petrolTrend.positive}
               onPress={() => setSelectedIndicator('fuel')}
-              cycleData={fuelCycleData}              
+              cycleData={fuelCycleData}
             />
             <IndicatorCard
               key={"Forex"}
@@ -253,7 +272,7 @@ export default function HomeScreen() {
               trendLabel="vs last week"
               positive={usdTrend.positive}
               onPress={() => setSelectedIndicator('forex')}
-              cycleData={forexCycleData}              
+              cycleData={forexCycleData}
             />
           </View>
 
@@ -269,7 +288,7 @@ export default function HomeScreen() {
                 trendLabel="vs last week"
                 positive={foodOverallPositive}
                 onPress={() => setSelectedIndicator('food')}
-                cycleData={foodCycleData}                
+                cycleData={foodCycleData}
               />
             </View>
             <IndicatorCard
@@ -279,7 +298,7 @@ export default function HomeScreen() {
               value={`${estimatedWeeklyInflation > 0 ? '+' : ''}${estimatedWeeklyInflation.toFixed(2)}%`}
               trend={inflationTrendStr}
               trendLabel="vs last week"
-              positive={isInflationDown}              
+              positive={isInflationDown}
               color={getTrendColor(estimatedWeeklyInflation)}
             />
           </View>
