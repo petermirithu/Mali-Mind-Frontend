@@ -19,6 +19,7 @@ import HeroChart from '@/components/impact/heroChart';
 import ImpactTile from '@/components/impact/impactTile';
 import ImpactProfileItem from '@/components/impact/impactProfileItem';
 import ImpactBreakdownChart from '@/components/impact/impactBreakDownChart';
+import { useSelector } from 'react-redux';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -32,17 +33,47 @@ function formatKESDecimal(amount: number): string {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function isImpactProfileEmpty(profile: any): boolean {
+
+  // {"commute": 0, "custom_categories": [], "electricity": 0, "food_budget": 0, "income": 0, "rent": 0, "savings": 0, "transport": "N/A", "water": 0}
+
+  if (!profile) return true;
+
+  const numericFields = [
+    Number(profile.income ?? 0),
+    Number(profile.rent ?? 0),
+    Number(profile.food_budget ?? 0),
+    Number(profile.savings ?? 0),
+    Number(profile.commute ?? 0),
+    Number(profile.electricity ?? 0),
+    Number(profile.water ?? 0),
+  ];
+
+  const allNumericZero = numericFields.every((n) => !Number.isFinite(n) || n <= 0);
+  const noTransport = !profile.transport || String(profile.transport).trim().length === 0 || profile.transport == "N/A";
+
+  const customCategories = Array.isArray(profile.custom_categories) ? profile.custom_categories : [];
+  const hasAnyCustomWithValue = customCategories.some((cat: any) => {
+    const nameOk = String(cat?.custom_item_name ?? '').trim().length > 0;
+    const value = Number(cat?.monthly_cost ?? 0);
+    return nameOk && Number.isFinite(value) && value > 0;
+  });
+
+  return allNumericZero && noTransport && !hasAnyCustomWithValue;
+}
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ImpactScreen() {
   const { theme } = useTheme();
   const screenStyls = useMemo(() => screenStyles(theme), [theme]);
   const modalStyls = useMemo(() => modalStyles(theme), [theme]);
 
+  const { userProfile } = useSelector((state: any) => state.userProfile);
+
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
-  // ─── Fetch impact data ─────────────────────────────────────────────
-  const USER_ID = 1;
-  const { data: impactData, isLoading, isError, refetch } = useImpact(USER_ID);
+  // ─── Fetch impact data ─────────────────────────────────────────────  
+  const { data: impactData, isLoading, isError, refetch } = useImpact(userProfile.id);
 
   const [formData, setFormData] = useState({
     income: '80000',
@@ -63,8 +94,8 @@ export default function ImpactScreen() {
 
   // Sync form data when API data loads
   useMemo(() => {
-    if (impactData?.user_profile) {
-      const profile = impactData.user_profile;
+    if (impactData?.user_impact_profile) {
+      const profile = impactData.user_impact_profile;
       setFormData({
         income: String(profile.income),
         rent: String(profile.rent),
@@ -87,7 +118,7 @@ export default function ImpactScreen() {
   const handleSave = () => {
     saveImpact.mutate({
       ...formData,
-      user_id: USER_ID,
+      user_id: userProfile.id,
       custom_categories: custom_categories,
     }, {
       onSuccess: () => {
@@ -99,7 +130,8 @@ export default function ImpactScreen() {
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
 
   // ─── Build profile items from API data ─────────────────────────────
-  const profile = impactData?.user_profile;
+  const profile = impactData?.user_impact_profile;
+  const isProfileEmpty = isImpactProfileEmpty(profile);
 
   const coreProfileItems = profile ? [
     { icon: "💼", label: "Income", value: formatKES(profile.income), valueColor: theme.primary },
@@ -143,11 +175,15 @@ export default function ImpactScreen() {
   const heroChangePct = impactData?.spending_change_pct ?? 0;
   const heroTrend = impactData?.spending_trend ?? 'stable';
   const heroArrow = heroTrend === 'up' ? '↑' : heroTrend === 'down' ? '↓' : '→';
-  const heroBadgeColor = heroTrend === 'up' ? theme.dangerDim : heroTrend === 'down' ? theme.primaryDim : theme.warning;
+  const heroBadgeColor = heroTrend === 'up' ? theme.dangerDim : heroTrend === 'down' ? theme.primaryDim : theme.warningDim;
   const heroBadgeTextColor = heroTrend === 'up' ? theme.danger : heroTrend === 'down' ? theme.primary : theme.warning;
   const startFillColor = heroTrend === 'up' ? theme.redStartFillColor : theme.greenStartFillColor;
   const endFillColor = heroTrend === 'up' ? theme.redEndFillColor : theme.greenEndFillColor;
-  const heroSubText = heroTrend === 'up' ? 'more than last month' : heroTrend === 'down' ? 'less than last month' : 'same as last month';
+  const heroSubText = heroTrend === 'up' ? 'More than last month' : heroTrend === 'down' ? 'Less than last month' : 'Stable this month';
+  const totalDeductions = impactData?.total_monthly_deductions ?? 0;
+  const moneyLeftThisMonth = impactData?.money_left_this_month ?? 0;
+  const savingsUtilizationPct = impactData?.savings_utilization_pct ?? 0;
+  const moneyLeftTone = moneyLeftThisMonth < 0 ? theme.danger : theme.primary;
 
   // ─── Loading / Error states ────────────────────────────────────────
   if (isLoading) {
@@ -158,6 +194,9 @@ export default function ImpactScreen() {
             <Text style={screenStyls.headerTitle}>Your Impact</Text>
             <Text style={screenStyls.headerSub}>See how the economy affects your life</Text>
           </View>
+          <TouchableOpacity disabled={true} style={screenStyls.infoBtn} activeOpacity={0.7} onPress={() => refetch()}>
+            <MaterialIcons name="refresh" size={24} color="white" />
+          </TouchableOpacity>
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -175,6 +214,9 @@ export default function ImpactScreen() {
             <Text style={screenStyls.headerTitle}>Your Impact</Text>
             <Text style={screenStyls.headerSub}>See how the economy affects your life</Text>
           </View>
+          <TouchableOpacity style={screenStyls.infoBtn} activeOpacity={0.7} onPress={() => refetch()}>
+            <MaterialIcons name="refresh" size={24} color="white" />
+          </TouchableOpacity>
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
           <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
@@ -203,132 +245,170 @@ export default function ImpactScreen() {
         contentContainerStyle={screenStyls.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Hero spending card ──────────────────────────────────────────── */}
-        <View style={[screenStyls.heroCard, {
-          backgroundColor: heroTrend === 'down' ? 'rgba(11, 143, 77, 0.05)' : (heroTrend === 'up' ? 'rgba(235, 87, 87, 0.05)' : 'rgba(245, 166, 35, 0.05)'),
-          borderColor: heroTrend === 'down' ? 'rgba(11, 143, 77, 0.3)' : (heroTrend === 'up' ? 'rgba(235, 87, 87, 0.3)' : 'rgba(245, 166, 35, 0.3)'),
-          borderWidth: 1.5,
-        }]}>
-          <HeroChart color={heroBadgeTextColor} currentSpending={impactData.current_month_spending} pastSpending={impactData.past_6_months_spending || []} startFillColor={startFillColor} endFillColor={endFillColor} />
-          <View style={screenStyls.heroLeft}>
-            <Text style={screenStyls.heroTopLabel}>This month you're spending</Text>
-            <Text style={screenStyls.heroAmount}>{heroAmount}</Text>
-            <View style={[screenStyls.heroBadge, { backgroundColor: heroBadgeColor }]}>
-              <Text style={[screenStyls.heroBadgeText, { color: heroBadgeTextColor }]}>{heroArrow} {Math.abs(heroChangePct).toFixed(1)}%</Text>
-            </View>
-            <Text style={screenStyls.heroSub}>{heroSubText}</Text>
-          </View>
-        </View>
-
-        {/* ── Section 1: Your Profile ─────────────────────────────────────── */}
-        <View style={screenStyls.sectionHeader}>
-          <Text style={screenStyls.sectionTitle}>Impact Profiles</Text>
-          <TouchableOpacity onPress={() => setIsEditModalVisible(true)}>
-            <Text style={screenStyls.editLink}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={screenStyls.profileCard}>
-          <View style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 0,
-          }}>
-            {displayItems.map((item, index) => (
-              <ImpactProfileItem key={index} {...item} theme={theme} />
-            ))}
-            {additionalProfileItems.length > 0 && (
-              <ImpactProfileItem
-                icon=""
-                label={isProfileExpanded ? "Show less" : "View all"}
-                value={""}
-                isViewAll
-                onPress={() => setIsProfileExpanded(!isProfileExpanded)}
-                theme={theme}
-              />
-            )}
-          </View>
-        </View>
-
-        {/* ── Section 2: Impact Breakdown ─────────────────────────────────── */}
-        <View style={screenStyls.sectionHeader}>
-          <Text style={screenStyls.sectionTitle}>Impact Breakdown</Text>
-        </View>
-        <Text style={screenStyls.sectionDesc}>See where the pressure comes from</Text>
-
-        {tileRows.map((row, rowIndex) => (
-          <View key={rowIndex} style={screenStyls.tilesRow}>
-            {row.map((item, idx) => (
-              <ImpactTile
-                key={`${rowIndex}-${idx}`}
-                icon={item.icon}
-                label={item.category}
-                amount={formatKES(item.monthly_amount_kes)}
-                pct={`${Math.abs(item.change_pct).toFixed(1)}%`}
-                direction={item.direction}
-                theme={theme}
-              />
-            ))}
-            {/* Fill empty space if odd number of tiles in last row */}
-            {row.length === 1 && <View style={{ flex: 1 }} />}
-          </View>
-        ))}
-
-        {/* ── Mali Insight ────────────────────────────────────────────────── */}
-        <TouchableOpacity style={screenStyls.insightCard} activeOpacity={0.85}>
-          <View style={screenStyls.insightIconBox}>
-            <Text style={screenStyls.insightRobotIcon}>🤖</Text>
-          </View>
-          <View style={screenStyls.insightText}>
-            <Text style={screenStyls.insightTitle}>Mali Insight</Text>
-            <Text style={screenStyls.insightHeadline}>
-              {impactData.ai_insight}
+        {isProfileEmpty ? (
+          <View style={screenStyls.emptyStateCard}>
+            <Text style={screenStyls.emptyStateIcon}>📝</Text>
+            <Text style={screenStyls.emptyStateTitle}>Complete Your Impact Profile</Text>
+            <Text style={screenStyls.emptyStateBody}>
+              Your impact profile is empty. Fill in your income, expenses, and lifestyle details so Mali can personalize and calculate your impact.
             </Text>
-            <Text style={screenStyls.insightBody}>
-              {impactData.ai_insight_detail}
-            </Text>
+            <TouchableOpacity
+              style={screenStyls.emptyStateButton}
+              activeOpacity={0.85}
+              onPress={() => setIsEditModalVisible(true)}
+            >
+              <Text style={screenStyls.emptyStateButtonText}>Fill Impact Profile</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        ) : (
+          <>
 
-        {/* ── Bottom two panels ────────────────────────────────────────────── */}
-        <View style={screenStyls.bottomRow}>
-          <View style={[screenStyls.bottomCard, screenStyls.expectCard]}>
-            <Text style={screenStyls.bottomCardTitle}>What to Expect</Text>
-            <Text style={screenStyls.bottomCardDesc}>If current trends continue</Text>
 
-            <View style={screenStyls.expectChart}>
-              <View style={screenStyls.expectChartInner}>
-                <ImpactBreakdownChart
-                  breakdownData={impactData.impact_breakdown}
-                  width={(SW / 2) - 44}
-                  height={100}
-                  theme={theme}
-                />
-              </View>
-            </View>
 
-            <Text style={screenStyls.expectLabel}>Expected extra cost{'\n'}next month</Text>
-            <Text style={screenStyls.expectAmount}>{formatKESDecimal(impactData.expected_extra_cost_kes)}</Text>
-            <Text style={screenStyls.expectRange}>
-              Range: <Text style={{ color: theme.danger }}>{formatKESDecimal(impactData.cost_range_min)} – {formatKESDecimal(impactData.cost_range_max)}</Text>
-            </Text>
-          </View>
-
-          {/* 5. Recommendations */}
-          <View style={[screenStyls.bottomCard, screenStyls.recoCard]}>
-            <Text style={screenStyls.bottomCardTitle}>Recommendations</Text>
-            <Text style={screenStyls.bottomCardDesc}>Smart ways to reduce impact</Text>
-
-            {impactData.recommendations.map((r, i) => (
-              <View key={i} style={screenStyls.recoRow}>
-                <View style={[screenStyls.recoIconBox, { backgroundColor: `${theme.primary}18` }]}>
-                  <Text style={screenStyls.recoIcon}>{r.icon}</Text>
+            {/* ── Hero spending card ──────────────────────────────────────────── */}
+            <View style={[screenStyls.heroCard, {
+              backgroundColor: heroTrend === 'down' ? 'rgba(11, 143, 77, 0.05)' : (heroTrend === 'up' ? 'rgba(235, 87, 87, 0.05)' : 'rgba(245, 166, 35, 0.05)'),
+              borderColor: heroTrend === 'down' ? 'rgba(11, 143, 77, 0.3)' : (heroTrend === 'up' ? 'rgba(235, 87, 87, 0.3)' : 'rgba(245, 166, 35, 0.3)'),
+              borderWidth: 1.5,
+            }]}>
+              <HeroChart color={heroBadgeTextColor} currentSpending={impactData.current_month_spending} pastSpending={impactData.past_6_months_spending || []} startFillColor={startFillColor} endFillColor={endFillColor} />
+              <View style={screenStyls.heroLeft}>
+                <Text style={screenStyls.heroTopLabel}>This month you're spending</Text>
+                <Text style={screenStyls.heroAmount}>{heroAmount}</Text>
+                <View style={[screenStyls.heroBadge, { backgroundColor: heroBadgeColor }]}>
+                  <Text style={[screenStyls.heroBadgeText, { color: heroBadgeTextColor }]}>{heroArrow} {Math.abs(heroChangePct).toFixed(1)}%</Text>
                 </View>
-                <Text style={screenStyls.recoText}>{r.text}</Text>
+                <Text style={screenStyls.heroSub}>{heroSubText}</Text>
+
+                <View style={screenStyls.heroMetaDivider} />
+
+                <View style={screenStyls.heroMetaRow}>
+                  <Text style={screenStyls.heroMetaLabel}>Left after deductions</Text>
+                  <Text style={[screenStyls.heroMetaValue, { color: moneyLeftTone }]}>
+                    {formatKESDecimal(moneyLeftThisMonth)}
+                  </Text>
+                </View>
+
+                <View style={screenStyls.heroMetaRow}>
+                  <Text style={screenStyls.heroMetaLabel}>Savings utilization</Text>
+                  <Text style={screenStyls.heroMetaValue}>
+                    {savingsUtilizationPct.toFixed(1)}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* ── Section 1: Your Profile ─────────────────────────────────────── */}
+            <View style={screenStyls.sectionHeader}>
+              <Text style={screenStyls.sectionTitle}>Impact Profiles</Text>
+              <TouchableOpacity onPress={() => setIsEditModalVisible(true)}>
+                <Text style={screenStyls.editLink}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={screenStyls.profileCard}>
+              <View style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 0,
+              }}>
+                {displayItems.map((item, index) => (
+                  <ImpactProfileItem key={index} {...item} theme={theme} />
+                ))}
+                {additionalProfileItems.length > 0 && (
+                  <ImpactProfileItem
+                    icon=""
+                    label={isProfileExpanded ? "Show less" : "View all"}
+                    value={""}
+                    isViewAll
+                    onPress={() => setIsProfileExpanded(!isProfileExpanded)}
+                    theme={theme}
+                  />
+                )}
+              </View>
+            </View>
+
+            {/* ── Section 2: Impact Breakdown ─────────────────────────────────── */}
+            <View style={screenStyls.sectionHeader}>
+              <Text style={screenStyls.sectionTitle}>Impact Breakdown</Text>
+            </View>
+            <Text style={screenStyls.sectionDesc}>See where the pressure comes from</Text>
+
+            {tileRows.map((row, rowIndex) => (
+              <View key={rowIndex} style={screenStyls.tilesRow}>
+                {row.map((item, idx) => (
+                  <ImpactTile
+                    key={`${rowIndex}-${idx}`}
+                    icon={item.icon}
+                    label={item.category}
+                    amount={formatKES(item.monthly_amount_kes)}
+                    pct={`${Math.abs(item.change_pct).toFixed(1)}%`}
+                    direction={item.direction}
+                    theme={theme}
+                  />
+                ))}
+                {/* Fill empty space if odd number of tiles in last row */}
+                {row.length === 1 && <View style={{ flex: 1 }} />}
               </View>
             ))}
-          </View>
-        </View>
+
+            {/* ── Mali Insight ────────────────────────────────────────────────── */}
+            <TouchableOpacity style={screenStyls.insightCard} activeOpacity={0.85}>
+              <View style={screenStyls.insightIconBox}>
+                <Text style={screenStyls.insightRobotIcon}>🤖</Text>
+              </View>
+              <View style={screenStyls.insightText}>
+                <Text style={screenStyls.insightTitle}>Mali Insight</Text>
+                <Text style={screenStyls.insightHeadline}>
+                  {impactData.ai_insight}
+                </Text>
+                <Text style={screenStyls.insightBody}>
+                  {impactData.ai_insight_detail}
+                </Text>
+              </View>
+            </TouchableOpacity>
+                        
+            {/* ── Bottom two panels ────────────────────────────────────────────── */}
+            <View style={screenStyls.bottomRow}>
+              <View style={[screenStyls.bottomCard, screenStyls.expectCard]}>
+                <Text style={screenStyls.bottomCardTitle}>What to Expect</Text>
+                <Text style={screenStyls.bottomCardDesc}>If current trends continue</Text>
+
+                <View style={screenStyls.expectChart}>
+                  <View style={screenStyls.expectChartInner}>
+                    <ImpactBreakdownChart
+                      breakdownData={impactData.impact_breakdown}
+                      width={(SW / 2) - 44}
+                      height={100}
+                      theme={theme}
+                    />
+                  </View>
+                </View>
+
+                <Text style={screenStyls.expectLabel}>Expected extra cost{'\n'}next month</Text>
+                <Text style={screenStyls.expectAmount}>{formatKESDecimal(impactData.expected_extra_cost_kes)}</Text>
+                <Text style={screenStyls.expectRange}>
+                  Range: <Text style={{ color: theme.danger }}>{formatKESDecimal(impactData.cost_range_min)} – {formatKESDecimal(impactData.cost_range_max)}</Text>
+                </Text>
+              </View>
+
+              {/* 5. Recommendations */}
+              <View style={[screenStyls.bottomCard, screenStyls.recoCard]}>
+                <Text style={screenStyls.bottomCardTitle}>Recommendations</Text>
+                <Text style={screenStyls.bottomCardDesc}>Smart ways to reduce impact</Text>
+
+                {impactData.recommendations.map((r, i) => (
+                  <View key={i} style={screenStyls.recoRow}>
+                    <View style={[screenStyls.recoIconBox, { backgroundColor: `${theme.primary}18` }]}>
+                      <Text style={screenStyls.recoIcon}>{r.icon}</Text>
+                    </View>
+                    <Text style={screenStyls.recoText}>{r.text}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -505,6 +585,48 @@ const screenStyles = (theme: any) => StyleSheet.create({
     color: theme.textDim,
   },
 
+  // Empty card
+  emptyStateCard: {
+    backgroundColor: theme.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  emptyStateIcon: {
+    fontSize: 36,
+    marginBottom: 10,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: theme.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyStateBody: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: theme.textDim,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emptyStateButton: {
+    backgroundColor: theme.primary,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
   // Hero card
   heroCard: {
     backgroundColor: theme.card,
@@ -550,6 +672,29 @@ const screenStyles = (theme: any) => StyleSheet.create({
     color: theme.textDim,
   },
 
+  heroMetaDivider: {
+    height: 1,
+    backgroundColor: theme.cardBorder,
+    opacity: 0.7,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  heroMetaLabel: {
+    fontSize: 11,
+    color: theme.textDim,
+  },
+  heroMetaValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.text,
+  },
+  
   // Section headers
   sectionHeader: {
     flexDirection: 'row',

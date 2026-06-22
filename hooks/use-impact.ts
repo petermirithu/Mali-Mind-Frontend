@@ -16,7 +16,7 @@ export type CustomCategory = {
     updated_at: string | null;
 };
 
-export type UserProfile = {
+export type UserImpactProfile = {
     income: number;
     rent: number;
     food_budget: number;
@@ -50,7 +50,10 @@ export type ImpactResponse = {
     current_month_spending: number;
     spending_change_pct: number;
     spending_trend: "up" | "down" | "stable";
-    user_profile: UserProfile;
+    total_monthly_deductions: number;
+    money_left_this_month: number;
+    savings_utilization_pct: number;
+    user_impact_profile: UserImpactProfile;
     impact_breakdown: ImpactBreakdownItem[];
     ai_insight: string;
     ai_insight_detail: string;
@@ -61,18 +64,6 @@ export type ImpactResponse = {
     past_6_months_spending: PastMonthSpending[];
     computed_at: string;
 };
-
-export function useImpact(userId: number) {
-    return useQuery<ImpactResponse>({
-        queryKey: ['impact', userId],
-        queryFn: async () => {
-            const { data } = await api.get<ImpactResponse>(`/impact/${userId}`);
-            return data;
-        },
-        refetchOnWindowFocus: false,
-        staleTime: 1000 * 60 * 2,
-    })
-}
 
 export type SaveImpactPayload = {
     user_id: number;
@@ -87,6 +78,17 @@ export type SaveImpactPayload = {
     custom_categories: { label: string; value: string }[];
 };
 
+export function useImpact(userId: number) {
+    return useQuery<ImpactResponse>({
+        queryKey: ['impact', userId],
+        queryFn: async () => {
+            const { data } = await api.get<ImpactResponse>(`/impact/${userId}`);
+            return data;
+        },
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 2,
+    })
+}
 export function useSaveImpact() {
     const queryClient = useQueryClient();
     return useMutation({
