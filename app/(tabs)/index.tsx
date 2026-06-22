@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, View } from '@gluestack-ui/themed';
 import { useDashboard, type DashboardFoodBasket } from '@/hooks/use-dashboard';
-import { Spinner } from '@/components/ui/spinner';
 import { useTheme } from '@/contexts/theme-context';
 import Card from '@/components/home/card';
 import SparklineChart from '@/components/home/sparklineChart';
@@ -17,11 +16,13 @@ import IndicatorCard from '@/components/home/indicatorCard';
 import BreakdownModal from '@/components/home/breakdownModal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const { userProfile } = useSelector((state: any) => state.userProfile);
 
   const { data: dashboard, isLoading } = useDashboard();
   const [selectedIndicator, setSelectedIndicator] = useState<'food' | 'fuel' | 'forex' | null>(null);
@@ -31,6 +32,12 @@ export default function HomeScreen() {
   const slideAnim = useRef(new Animated.Value(24)).current;
 
   const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const getFirstName = (str: string) => {
+    const firstWord = str.trim().split(" ")[0];
+    if (!firstWord) return "";
+    return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+  }
 
   // Auto-play AI insights carousel
   useEffect(() => {
@@ -48,24 +55,24 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  if (isLoading || !dashboard) {
-    return (      
-      <SafeAreaView style={{flex:1, backgroundColor: theme.background}} edges={['top']}>
-        <View style={[styles.header, {paddingHorizontal: 16, paddingVertical: 14,}]}>
-            <View>
-              <Text style={styles.greeting} color={theme.text}>Hello, Alex 👋</Text>
-              <Text style={styles.date} color={theme.textDim}>{today}</Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.bellBtn, {
-                backgroundColor: theme.card,
-                borderColor: theme.cardBorder
-              }]}
-              disabled={true}
-              activeOpacity={0.7}>
-              <MaterialIcons name="notifications" size={24} color={theme.textDim} />
-            </TouchableOpacity>
+  if (isLoading || !dashboard) {  
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top']}>
+        <View style={[styles.header, { paddingHorizontal: 16, paddingVertical: 14, }]}>
+          <View>
+            <Text style={styles.greeting} color={theme.text}>Hello, {userProfile.fullname} 👋</Text>
+            <Text style={styles.date} color={theme.textDim}>{today}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.bellBtn, {
+              backgroundColor: theme.card,
+              borderColor: theme.cardBorder
+            }]}
+            disabled={true}
+            activeOpacity={0.7}>
+            <MaterialIcons name="notifications" size={24} color={theme.textDim} />
+          </TouchableOpacity>
+        </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.primary} />
           <Text style={{ color: theme.textDim, marginTop: 12, fontSize: 14 }}>Loading ...</Text>
@@ -208,7 +215,7 @@ export default function HomeScreen() {
           {/* ── Header ───────────────────────────────────────────────────── */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting} color={theme.text}>Hello, Alex 👋</Text>
+              <Text style={styles.greeting} color={theme.text}>Hello, {getFirstName(userProfile.fullname)} 👋</Text>
               <Text style={styles.date} color={theme.textDim}>{today}</Text>
             </View>
             <TouchableOpacity
