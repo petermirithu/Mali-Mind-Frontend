@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 0.60.0",
+    "appVersionSource" :"remote"
+  },
+  "build": {    
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },      
+      "ios": {
+        "simulator": true
+      },
+      "autoIncrement": true
+    },      
+    "mali-stagging": {
+      "channel": "mali-stagging",      
+      "android": {
+        "buildType": "apk"
+      },      
+      "autoIncrement": true
+    },            
+    "mali-production": {
+      "channel": "mali-production",
+      "android": {
+        "buildType": "apk"
+      },      
+      "autoIncrement": true
+    }    
+  },
+  "submit": {
+    "production": {}
+  }
+}
