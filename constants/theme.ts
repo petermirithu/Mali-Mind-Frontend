@@ -28,7 +28,7 @@ export interface ThemeColors {
   feedInsightGlow?: string;
 }
 
-export const themes: Record<ThemeMode, ThemeColors> = {
+export const themes: Record<ThemeMode, ThemeColors> = {  
   dark: {
     background: '#0B0F14',
     surface: '#121821',
