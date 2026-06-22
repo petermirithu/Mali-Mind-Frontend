@@ -31,7 +31,7 @@ export default function HeroChart({ color, currentSpending, pastSpending, startF
             borderRadius: 8,
             position: 'absolute',
             right: 0,
-            bottom: 0,
+            bottom: 60,
             opacity: 0.8,
         }}>
             {/* Background grid */}
