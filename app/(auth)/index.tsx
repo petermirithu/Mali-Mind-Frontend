@@ -116,7 +116,7 @@ export default function GetStartedScreen() {
             <TouchableOpacity
               style={sc.btn}
               activeOpacity={1}
-              onPress={() => router.push('/(tabs)')}
+              onPress={()=> router.push("/(auth)/sign-in")}              
               onPressIn={handlePressIn}
               onPressOut={handlePressOut}
             >
