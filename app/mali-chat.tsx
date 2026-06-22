@@ -22,10 +22,10 @@ import { useMaliChat } from '@/hooks/user-mali-chat';
 import { useAssets } from 'expo-asset';
 import { Image } from '@gluestack-ui/themed';
 import Bubble from '@/components/mali-chat/bubble';
+import { useSelector } from 'react-redux';
 
 
 type Role = 'user' | 'assistant';
-type ChatMessage = { role: Role; text: string; id: string };
 
 const QUICK_REPLIES = [
   'Why are food prices rising this week?',
@@ -38,7 +38,9 @@ const QUICK_REPLIES = [
 export default function AskMaliScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-
+  
+  const { userProfile } = useSelector((state: any) => state.userProfile);
+  
   const [assets] = useAssets([
     require('../assets/animations/typing.gif'),
   ]);
@@ -49,7 +51,7 @@ export default function AskMaliScreen() {
   const slideAnim = useRef(new Animated.Value(18)).current;
 
   const { messages, isTyping, error, suggestions, sendMessage, clearChat } = useMaliChat({
-    userId: 1,
+    userId: userProfile.id,
     setQuery: (text: string) => setQuery(text),
   });
 

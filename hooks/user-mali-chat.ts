@@ -39,8 +39,6 @@ type UseMaliChatResult = {
   clearChat: () => Promise<void>;
 };
 
-const DEFAULT_STORAGE_KEY = 'mali_chat_history_v1';
-
 function normalizeWsUrl(baseUrl: string, wsPath: string): string {
   const trimmedBase = baseUrl.trim().replace(/\/+$/, '');
   if (!trimmedBase) {
@@ -125,7 +123,7 @@ export function useMaliChat(options: UseMaliChatOptions): UseMaliChatResult {
 
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(DEFAULT_STORAGE_KEY);
+        const raw = await AsyncStorage.getItem(`mali-chat${userId.toString()}`);
         if (!raw || !mounted) return;
         const parsed = JSON.parse(raw);
         const sanitized = sanitizeMessages(parsed);
@@ -141,7 +139,7 @@ export function useMaliChat(options: UseMaliChatOptions): UseMaliChatResult {
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(messages)).catch(() => {
+    AsyncStorage.setItem(`mali-chat${userId.toString()}`, JSON.stringify(messages)).catch(() => {
       // ignore persistence errors
     });
   }, [messages]);
@@ -291,7 +289,7 @@ export function useMaliChat(options: UseMaliChatOptions): UseMaliChatResult {
     setIsTyping(false);
     setSuggestions([]);
     activeAssistantIdRef.current = null;
-    await AsyncStorage.removeItem(DEFAULT_STORAGE_KEY).catch(() => {
+    await AsyncStorage.removeItem(`mali-chat${userId.toString()}`).catch(() => {
       // ignore persistence errors
     });
   }, []);
