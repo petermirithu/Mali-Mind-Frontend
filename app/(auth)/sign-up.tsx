@@ -7,21 +7,22 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
+  Text,  
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAssets } from 'expo-asset';
-
 import { useTheme } from '@/contexts/theme-context';
 import { Fonts } from '@/constants/fonts';
 import type { ThemeColors } from '@/constants/theme';
-import { registerWithEmail } from '@/authentication/firebase-auth';
+import { loginWithGoogleNative, registerWithEmail } from '@/authentication/firebase-auth';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@/components/ui/toast';
+import SocialButton from '@/components/auth/socialButton';
+import MaliLogo from '@/components/auth/maliLogo';
+import FormInput from '@/components/auth/formInput';
 
 type FieldState = {
   fullName: string;
@@ -29,104 +30,13 @@ type FieldState = {
   password: string;
 };
 
-function MaliLogo({ theme }: { theme: ThemeColors }) {
-  const sc = useMemo(() => makeStyles(theme), [theme]);
-  return (
-    <View style={sc.logoWrap}>
-      <View style={sc.logoRow}>
-        <Text style={sc.logoText}>MAL</Text>
-        <View style={sc.logoIWrap}>
-          <Text style={sc.logoText}>i</Text>
-          <View style={sc.logoGoldDot} />
-        </View>
-      </View>
-      <Text style={sc.logoSub}>Create your account</Text>
-      <Text style={sc.logoHint}>Join Mali and take control of your financial future.</Text>
-    </View>
-  );
-}
-
-type InputProps = {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  icon: keyof typeof Ionicons.glyphMap;
-  secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address' | 'phone-pad';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-};
-
-function FormInput({
-  label,
-  placeholder,
-  value,
-  onChangeText,
-  icon,
-  secureTextEntry,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
-}: InputProps) {
-  const { theme } = useTheme();
-  const sc = useMemo(() => makeStyles(theme), [theme]);
-  const [hidden, setHidden] = useState(Boolean(secureTextEntry));
-
-  return (
-    <View style={sc.inputGroup}>
-      <Text style={sc.inputLabel}>{label}</Text>
-      <View style={sc.inputWrap}>
-        <Ionicons name={icon} size={16} color={theme.textDim} style={sc.inputIcon} />
-        <TextInput
-          placeholder={placeholder}
-          placeholderTextColor={theme.textDim}
-          style={sc.input}
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={hidden}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-        />
-        {secureTextEntry ? (
-          <Pressable onPress={() => setHidden((v) => !v)} hitSlop={8} style={sc.eyeBtn}>
-            <Ionicons
-              name={hidden ? 'eye-off-outline' : 'eye-outline'}
-              size={18}
-              color={theme.textDim}
-            />
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function SocialButton({
-  label,
-  icon,
-  onPress,
-}: {
-  label: string;
-  icon: 'logo-google';
-  onPress: () => void;
-}) {
-  const { theme } = useTheme();
-  const sc = useMemo(() => makeStyles(theme), [theme]);
-
-  return (
-    <Pressable style={sc.socialBtn} onPress={onPress}>
-      <Ionicons name={icon} size={18} color={theme.text} />
-      <Text style={sc.socialText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 export default function SignUp() {
   const { theme } = useTheme();
   const sc = useMemo(() => makeStyles(theme), [theme]);
-  const toast = useToast();  
-  const { signUp } = useAuth();
+  const toast = useToast();
+  const { signUp, socialAuth } = useAuth();
   const { mutateAsync: createProfile } = signUp;
+  const { mutateAsync: socialFetchProfile } = socialAuth;
 
   const [assets] = useAssets([require('../../assets/backgrounds/earth_up.png')]);
 
@@ -137,6 +47,7 @@ export default function SignUp() {
   });
   const [agree, setAgree] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
 
   const canSubmit =
     form.fullName.trim().length > 1 &&
@@ -154,7 +65,7 @@ export default function SignUp() {
     try {
       const user = await registerWithEmail(form.email.trim(), form.password);
       const token = await user.getIdToken();
-                  
+
       await createProfile({
         fullname: form.fullName.trim(),
         email: form.email.trim(),
@@ -192,6 +103,38 @@ export default function SignUp() {
     }
   };
 
+
+  const onGoogleSignIn = async () => {
+    if (isGoogleSigningIn) return;
+
+    setIsGoogleSigningIn(true);
+    try {
+      const result = await loginWithGoogleNative();
+      await socialFetchProfile(result);
+      router.replace('/(tabs)');
+    }
+    catch (error: any) {
+      const rawMessage =
+        error?.message ??
+        error?.response?.data?.message ??
+        'Google sign-in failed. Please try again.';
+      const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
+
+      toast.show({
+        placement: 'bottom',
+        duration: 3500,
+        render: ({ id }) => (
+          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
+            <ToastTitle>{message}</ToastTitle>
+          </Toast>
+        ),
+      });
+    }
+    finally {
+      setIsGoogleSigningIn(false);
+    }
+  };
+
   if (!assets) {
     return (
       <SafeAreaView style={sc.screen} edges={['top', 'bottom']}>
@@ -220,7 +163,11 @@ export default function SignUp() {
             showsVerticalScrollIndicator={false}
           >
             <View style={sc.card}>
-              <MaliLogo theme={theme} />
+              <MaliLogo 
+                theme={theme} 
+                title='Create your account'
+                subTitle='Join Mali and take control of your financial future.'
+                />
 
               <FormInput
                 label="Full Name"
@@ -278,7 +225,12 @@ export default function SignUp() {
               </View>
 
               <View style={sc.socialRow}>
-                <SocialButton label="Google" icon="logo-google" onPress={() => { }} />
+                <SocialButton
+                  label={isGoogleSigningIn ? 'Signing in...' : 'Google'}
+                  icon="logo-google"
+                  onPress={onGoogleSignIn}
+                  disabled={isGoogleSigningIn}
+                />
               </View>
 
               <View style={sc.footerRow}>
@@ -339,93 +291,7 @@ const makeStyles = (theme: ThemeColors) =>
       shadowRadius: 20,
       elevation: 12,
     },
-
-    logoWrap: {
-      alignItems: 'center',
-      marginBottom: 20,
-    },
-    logoRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-    },
-    logoText: {
-      fontFamily: Fonts.sans,
-      fontSize: 56,
-      fontWeight: '900',
-      color: theme.primary,
-      letterSpacing: -1.2,
-      lineHeight: 60,
-      textShadowColor: theme.greenGlow,
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 18,
-    },
-    logoIWrap: {
-      position: 'relative',
-    },
-    logoGoldDot: {
-      position: 'absolute',
-      top: 4,
-      right: 1,
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: theme.warning,
-      shadowColor: theme.warning,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 7,
-      elevation: 4,
-    },
-    logoSub: {
-      marginTop: 4,
-      fontFamily: Fonts.sans,
-      fontSize: 22,
-      fontWeight: '700',
-      color: theme.text,
-      letterSpacing: 0.2,
-    },
-    logoHint: {
-      marginTop: 6,
-      fontFamily: Fonts.sans,
-      fontSize: 13,
-      color: theme.textDim,
-      textAlign: 'center',
-    },
-
-    inputGroup: {
-      marginBottom: 10,
-    },
-    inputLabel: {
-      fontFamily: Fonts.sans,
-      fontSize: 12,
-      color: theme.textDim,
-      marginBottom: 6,
-      marginLeft: 2,
-    },
-    inputWrap: {
-      minHeight: 48,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.10)',
-      backgroundColor: 'rgba(255,255,255,0.03)',
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-    },
-    inputIcon: {
-      marginRight: 8,
-    },
-    input: {
-      flex: 1,
-      color: theme.text,
-      fontFamily: Fonts.sans,
-      fontSize: 14,
-      paddingVertical: 10,
-    },
-    eyeBtn: {
-      paddingLeft: 8,
-      paddingVertical: 4,
-    },
+        
 
     termsRow: {
       marginTop: 6,

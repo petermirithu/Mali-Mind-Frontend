@@ -10,8 +10,7 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Text,
-    TextInput,
+    Text,    
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,81 +20,8 @@ import type { ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../contexts/theme-context';
 import { useAuth } from '@/hooks/use-auth';
 import { Toast, ToastDescription, ToastTitle, useToast } from '@/components/ui/toast';
-
-type InputProps = {
-    label: string;
-    placeholder: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    icon: keyof typeof Ionicons.glyphMap;
-    secureTextEntry?: boolean;
-    keyboardType?: 'default' | 'number-pad';
-    autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-};
-
-function MaliLogo({ theme }: { theme: ThemeColors }) {
-    const sc = useMemo(() => makeStyles(theme), [theme]);
-
-    return (
-        <View style={sc.logoWrap}>
-            <View style={sc.logoRow}>
-                <Text style={sc.logoText}>MAL</Text>
-                <View style={sc.logoIWrap}>
-                    <Text style={sc.logoText}>i</Text>
-                    <View style={sc.logoGoldDot} />
-                </View>
-            </View>
-            <Text style={sc.logoSub}>Reset password</Text>
-            <Text style={sc.logoHint}>
-                Enter the verification code from your email & create a new password.
-            </Text>
-        </View>
-    );
-}
-
-function FormInput({
-    label,
-    placeholder,
-    value,
-    onChangeText,
-    icon,
-    secureTextEntry,
-    keyboardType = 'default',
-    autoCapitalize = 'none',
-}: InputProps) {
-    const { theme } = useTheme();
-    const sc = useMemo(() => makeStyles(theme), [theme]);
-    const [hidden, setHidden] = useState(Boolean(secureTextEntry));
-
-    return (
-        <View style={sc.inputGroup}>
-            <Text style={sc.inputLabel}>{label}</Text>
-            <View style={sc.inputWrap}>
-                <Ionicons name={icon} size={16} color={theme.textDim} style={sc.inputIcon} />
-                <TextInput
-                    value={value}
-                    onChangeText={onChangeText}
-                    placeholder={placeholder}
-                    placeholderTextColor={theme.textDim}
-                    style={sc.input}
-                    keyboardType={keyboardType}
-                    secureTextEntry={hidden}
-                    autoCapitalize={autoCapitalize}
-                    autoCorrect={false}
-                />
-                {secureTextEntry ? (
-                    <Pressable onPress={() => setHidden((prev) => !prev)} hitSlop={8} style={sc.eyeBtn}>
-                        <Ionicons
-                            name={hidden ? 'eye-off-outline' : 'eye-outline'}
-                            size={18}
-                            color={theme.textDim}
-                        />
-                    </Pressable>
-                ) : null}
-            </View>
-        </View>
-    );
-}
+import MaliLogo from '@/components/auth/maliLogo';
+import FormInput from '@/components/auth/formInput';
 
 export default function ResetPassword() {
     const { theme } = useTheme();
@@ -212,7 +138,7 @@ export default function ResetPassword() {
                 ),
             });
 
-            if (response.status == "success") {                                
+            if (response.status == "success") {
                 router.replace('/(auth)/sign-in');
             }
         } catch (error: any) {
@@ -267,7 +193,11 @@ export default function ResetPassword() {
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={sc.card}>
-                            <MaliLogo theme={theme} />
+                            <MaliLogo
+                                theme={theme}
+                                title='Reset password'
+                                subTitle='Enter the verification code from your email & create a new password.'
+                            />
 
                             <FormInput
                                 label="Verification Code"
@@ -302,7 +232,7 @@ export default function ResetPassword() {
                             {!passwordsMatch && confirmPassword.length > 0 ? (
                                 <Text style={sc.errorText}>Passwords do not match.</Text>
                             ) : null}
-                            
+
                             <Pressable
                                 onPress={onResetPassword}
                                 style={[sc.primaryBtn, (!canSubmit || resetPassword.isPending) && sc.primaryBtnDisabled]}
@@ -373,94 +303,7 @@ const makeStyles = (theme: ThemeColors) =>
             shadowRadius: 20,
             elevation: 12,
         },
-
-        logoWrap: {
-            alignItems: 'center',
-            marginBottom: 20,
-        },
-        logoRow: {
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-        },
-        logoText: {
-            fontFamily: Fonts.sans,
-            fontSize: 56,
-            fontWeight: '900',
-            color: theme.primary,
-            letterSpacing: -1.2,
-            lineHeight: 60,
-            textShadowColor: theme.greenGlow,
-            textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 18,
-        },
-        logoIWrap: {
-            position: 'relative',
-        },
-        logoGoldDot: {
-            position: 'absolute',
-            top: 4,
-            right: 1,
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            backgroundColor: theme.warning,
-            shadowColor: theme.warning,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.9,
-            shadowRadius: 7,
-            elevation: 4,
-        },
-        logoSub: {
-            marginTop: 4,
-            fontFamily: Fonts.sans,
-            fontSize: 22,
-            fontWeight: '700',
-            color: theme.text,
-            letterSpacing: 0.2,
-        },
-        logoHint: {
-            marginTop: 6,
-            fontFamily: Fonts.sans,
-            fontSize: 13,
-            color: theme.textDim,
-            textAlign: 'center',
-        },
-
-        inputGroup: {
-            marginBottom: 10,
-        },
-        inputLabel: {
-            fontFamily: Fonts.sans,
-            fontSize: 12,
-            color: theme.textDim,
-            marginBottom: 6,
-            marginLeft: 2,
-        },
-        inputWrap: {
-            minHeight: 48,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.10)',
-            backgroundColor: 'rgba(255,255,255,0.03)',
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 12,
-        },
-        inputIcon: {
-            marginRight: 8,
-        },
-        input: {
-            flex: 1,
-            color: theme.text,
-            fontFamily: Fonts.sans,
-            fontSize: 14,
-            paddingVertical: 10,
-        },
-        eyeBtn: {
-            paddingLeft: 8,
-            paddingVertical: 4,
-        },
-
+        
         errorText: {
             marginTop: 2,
             marginBottom: 10,

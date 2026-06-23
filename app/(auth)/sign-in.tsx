@@ -22,103 +22,11 @@ import { loginWithEmail, loginWithGoogleNative } from '../../authentication/fire
 import { useToast, Toast, ToastTitle } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
 import * as WebBrowser from 'expo-web-browser';
+import SocialButton from '@/components/auth/socialButton';
+import MaliLogo from '@/components/auth/maliLogo';
+import FormInput from '@/components/auth/formInput';
 
 WebBrowser.maybeCompleteAuthSession();
-
-type InputProps = {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  icon: keyof typeof Ionicons.glyphMap;
-  secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-};
-
-function MaliLogo({ theme }: { theme: ThemeColors }) {
-  const sc = useMemo(() => makeStyles(theme), [theme]);
-
-  return (
-    <View style={sc.logoWrap}>
-      <View style={sc.logoRow}>
-        <Text style={sc.logoText}>MAL</Text>
-        <View style={sc.logoIWrap}>
-          <Text style={sc.logoText}>i</Text>
-          <View style={sc.logoGoldDot} />
-        </View>
-      </View>
-      <Text style={sc.logoSub}>welcomes back</Text>
-      <Text style={sc.logoHint}>Sign in to continue to your account.</Text>
-    </View>
-  );
-}
-
-function FormInput({
-  label,
-  placeholder,
-  value,
-  onChangeText,
-  icon,
-  secureTextEntry,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
-}: InputProps) {
-  const { theme } = useTheme();
-  const sc = useMemo(() => makeStyles(theme), [theme]);
-  const [hidden, setHidden] = useState(Boolean(secureTextEntry));
-
-  return (
-    <View style={sc.inputGroup}>
-      <Text style={sc.inputLabel}>{label}</Text>
-      <View style={sc.inputWrap}>
-        <Ionicons name={icon} size={16} color={theme.textDim} style={sc.inputIcon} />
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={theme.textDim}
-          style={sc.input}
-          keyboardType={keyboardType}
-          secureTextEntry={hidden}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-        />
-        {secureTextEntry ? (
-          <Pressable onPress={() => setHidden((prev) => !prev)} hitSlop={8} style={sc.eyeBtn}>
-            <Ionicons
-              name={hidden ? 'eye-off-outline' : 'eye-outline'}
-              size={18}
-              color={theme.textDim}
-            />
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function SocialButton({
-  label,
-  icon,
-  onPress,
-  disabled = false,
-}: {
-  label: string;
-  icon: 'logo-google';
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  const { theme } = useTheme();
-  const sc = useMemo(() => makeStyles(theme), [theme]);
-
-  return (
-    <Pressable style={[sc.socialBtn, disabled && sc.socialBtnDisabled]} onPress={onPress} disabled={disabled}>
-      <Ionicons name={icon} size={18} color={theme.text} />
-      <Text style={sc.socialText}>{label}</Text>
-    </Pressable>
-  );
-}
 
 export default function SignIn() {
   const { theme } = useTheme();
@@ -238,7 +146,11 @@ export default function SignIn() {
             showsVerticalScrollIndicator={false}
           >
             <View style={sc.card}>
-              <MaliLogo theme={theme} />
+              <MaliLogo 
+                theme={theme} 
+                title='Welcomes back'
+                subTitle='Sign in to continue to your account.'
+                />
 
               <FormInput
                 label="Email Address"
@@ -343,94 +255,7 @@ const makeStyles = (theme: ThemeColors) =>
       shadowRadius: 20,
       elevation: 12,
     },
-
-    logoWrap: {
-      alignItems: 'center',
-      marginBottom: 20,
-    },
-    logoRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-    },
-    logoText: {
-      fontFamily: Fonts.sans,
-      fontSize: 56,
-      fontWeight: '900',
-      color: theme.primary,
-      letterSpacing: -1.2,
-      lineHeight: 60,
-      textShadowColor: theme.greenGlow,
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 18,
-    },
-    logoIWrap: {
-      position: 'relative',
-    },
-    logoGoldDot: {
-      position: 'absolute',
-      top: 4,
-      right: 1,
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: theme.warning,
-      shadowColor: theme.warning,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 7,
-      elevation: 4,
-    },
-    logoSub: {
-      marginTop: 4,
-      fontFamily: Fonts.sans,
-      fontSize: 22,
-      fontWeight: '700',
-      color: theme.text,
-      letterSpacing: 0.2,
-    },
-    logoHint: {
-      marginTop: 6,
-      fontFamily: Fonts.sans,
-      fontSize: 13,
-      color: theme.textDim,
-      textAlign: 'center',
-    },
-
-    inputGroup: {
-      marginBottom: 10,
-    },
-    inputLabel: {
-      fontFamily: Fonts.sans,
-      fontSize: 12,
-      color: theme.textDim,
-      marginBottom: 6,
-      marginLeft: 2,
-    },
-    inputWrap: {
-      minHeight: 48,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.10)',
-      backgroundColor: 'rgba(255,255,255,0.03)',
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-    },
-    inputIcon: {
-      marginRight: 8,
-    },
-    input: {
-      flex: 1,
-      color: theme.text,
-      fontFamily: Fonts.sans,
-      fontSize: 14,
-      paddingVertical: 10,
-    },
-    eyeBtn: {
-      paddingLeft: 8,
-      paddingVertical: 4,
-    },
-
+        
     forgotWrap: {
       alignSelf: 'flex-end',
       marginTop: 2,
@@ -489,28 +314,7 @@ const makeStyles = (theme: ThemeColors) =>
     socialRow: {
       flexDirection: 'row',
       gap: 10,
-    },
-    socialBtn: {
-      flex: 1,
-      height: 44,
-      borderRadius: 11,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
-      backgroundColor: 'rgba(255,255,255,0.02)',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    socialText: {
-      fontFamily: Fonts.sans,
-      color: theme.text,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    socialBtnDisabled: {
-      opacity: 0.6,
-    },
+    },    
 
     footerRow: {
       flexDirection: 'row',
