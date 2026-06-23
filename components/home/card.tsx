@@ -1,9 +1,10 @@
 import { useTheme } from "@/contexts/theme-context";
-import { StyleSheet, View } from "react-native";
+import { View } from "@gluestack-ui/themed";
+import { StyleSheet } from "react-native";
 
 export default function Card({ children, style }: { children: React.ReactNode; style?: object }) {
     const { theme } = useTheme();
-    return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }, style]}>{children}</View>;
+    return <View style={[styles.card, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder, shadowColor: theme.shadow }, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -12,7 +13,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         padding: 18,
         marginBottom: 14,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 20,

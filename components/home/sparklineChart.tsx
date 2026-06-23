@@ -1,6 +1,7 @@
 import { useTheme } from '@/contexts/theme-context';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from '@gluestack-ui/themed';
+import { StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
 export default function SparklineChart({
@@ -29,8 +30,8 @@ export default function SparklineChart({
   }));
 
   const gridColor = positive
-    ? 'rgba(11, 143, 77, 0.08)'
-    : 'rgba(235, 87, 87, 0.08)';
+    ? theme.pulsePositiveSurface
+    : theme.pulseNegativeSurface;
 
   // Build horizontal grid lines
   const gridRows = 4;

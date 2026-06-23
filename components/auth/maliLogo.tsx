@@ -40,7 +40,7 @@ const makeStyles = (theme: ThemeColors) =>
             lineHeight: 60,
             textShadowColor: theme.greenGlow,
             textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 18,
+            textShadowRadius: 2,
         },
         logoIWrap: {
             position: 'relative',

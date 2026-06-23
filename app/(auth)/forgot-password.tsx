@@ -10,17 +10,15 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Text,
-    TextInput,
-    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from '@gluestack-ui/themed';
 
 import { Fonts } from '../../constants/fonts';
 import type { ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../contexts/theme-context';
 import { useAuth } from '@/hooks/use-auth';
-import { Toast, ToastDescription, ToastTitle, useToast } from '@/components/ui/toast';
+import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toast';
 import MaliLogo from '@/components/auth/maliLogo';
 import FormInput from '@/components/auth/formInput';
 
@@ -46,15 +44,11 @@ export default function ForgotPassword() {
         try {
             const response = await forgotPassword.mutateAsync({ email: email.trim() });
 
-            toast.show({
-                placement: 'bottom',
+            showAppToast(toast, {
+                action: resolveToastAction(response.status),
+                title: response.status,
+                description: response.message,
                 duration: 5000,
-                render: ({ id }) => (
-                    <Toast nativeID={`toast-${id}`} action={response.status} variant="outline">
-                        <ToastTitle>{response.status}</ToastTitle>
-                        <ToastDescription numberOfLines={3}>{response.message}</ToastDescription>
-                    </Toast>
-                ),
             });
 
             setIsSent(true);
@@ -68,15 +62,11 @@ export default function ForgotPassword() {
         }
         catch (error) {
             setIsSent(false);
-            toast.show({
-                placement: 'bottom',
+            showAppToast(toast, {
+                action: resolveToastAction('warning'),
+                title: 'Email required',
+                description: 'Please sign up again to receive a verification code.',
                 duration: 3000,
-                render: ({ id }) => (
-                    <Toast nativeID={`toast-${id}`} action="warning" variant="outline">
-                        <ToastTitle>Email required</ToastTitle>
-                        <ToastDescription>Please sign up again to receive a verification code.</ToastDescription>
-                    </Toast>
-                ),
             });
         }
     };
@@ -198,11 +188,11 @@ const makeStyles = (theme: ThemeColors) =>
         card: {
             borderRadius: 28,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.08)',
-            backgroundColor: 'rgba(8,14,24,0.5)',
+            borderColor: theme.cardTBorder,
+            backgroundColor: theme.cardT,
             paddingHorizontal: 18,
             paddingVertical: 20,
-            shadowColor: '#000',
+            shadowColor: theme.shadow,
             shadowOffset: { width: 0, height: 10 },
             shadowOpacity: 0.35,
             shadowRadius: 20,
@@ -215,8 +205,8 @@ const makeStyles = (theme: ThemeColors) =>
             gap: 8,
             marginBottom: 12,
             borderWidth: 1,
-            borderColor: 'rgba(146, 255, 177, 0.35)',
-            backgroundColor: 'rgba(146, 255, 177, 0.08)',
+            borderColor: theme.successBorder,
+            backgroundColor: theme.successSurface,
             borderRadius: 10,
             paddingHorizontal: 10,
             paddingVertical: 9,
@@ -242,13 +232,13 @@ const makeStyles = (theme: ThemeColors) =>
             elevation: 8,
         },
         primaryBtnDisabled: {
-            backgroundColor: '#3E4A5E',
+            backgroundColor: theme.disabledSurface,
             shadowOpacity: 0.12,
             elevation: 2,
         },
         primaryBtnText: {
             fontFamily: Fonts.sans,
-            color: '#F7FFF9',
+            color: theme.onPrimary,
             fontSize: 16,
             fontWeight: '800',
             letterSpacing: 0.2,
@@ -260,8 +250,8 @@ const makeStyles = (theme: ThemeColors) =>
             paddingVertical: 5,
             borderRadius: 11,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.12)',
-            backgroundColor: 'rgba(255,255,255,0.02)',
+            borderColor: theme.subtleBorder,
+            backgroundColor: theme.subtleSurface,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
@@ -284,7 +274,7 @@ const makeStyles = (theme: ThemeColors) =>
         dividerLine: {
             flex: 1,
             height: 1,
-            backgroundColor: 'rgba(255,255,255,0.12)',
+            backgroundColor: theme.subtleBorder,
         },
         dividerText: {
             fontFamily: Fonts.sans,

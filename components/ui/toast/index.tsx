@@ -284,4 +284,55 @@ Toast.displayName = 'Toast';
 ToastTitle.displayName = 'ToastTitle';
 ToastDescription.displayName = 'ToastDescription';
 
-export { useToast, Toast, ToastTitle, ToastDescription };
+type AppToastController = ReturnType<typeof useToast>;
+
+type ShowAppToastOptions = {
+  action?: ToastAction;
+  title: string;
+  description?: string;
+  duration?: number;
+  placement?: 'top' | 'bottom';
+  nativeIDPrefix?: string;
+};
+
+function showAppToast(
+  toast: AppToastController,
+  {
+    action = 'muted',
+    title,
+    description,
+    duration = 3500,
+    placement = 'bottom',
+    nativeIDPrefix = 'toast',
+  }: ShowAppToastOptions
+) {
+  toast.show({
+    placement,
+    duration,
+    render: ({ id }) => (
+      <Toast
+        nativeID={`${nativeIDPrefix}-${id}`}
+        action={action}
+        variant="solid"        
+      >
+        <ToastTitle>{title}</ToastTitle>
+        {description ? <ToastDescription numberOfLines={3}>{description}</ToastDescription> : null}
+      </Toast>
+    ),
+  });
+}
+
+function resolveToastAction(action?: string): ToastAction {
+  switch (action) {
+    case 'error':
+    case 'warning':
+    case 'success':
+    case 'info':
+    case 'muted':
+      return action;
+    default:
+      return 'muted';
+  }
+}
+
+export { useToast, Toast, ToastTitle, ToastDescription, showAppToast, resolveToastAction };

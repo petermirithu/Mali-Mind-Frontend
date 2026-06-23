@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -20,7 +18,7 @@ import { Fonts } from '@/constants/fonts';
 import { useTheme } from '@/contexts/theme-context';
 import { useMaliChat } from '@/hooks/user-mali-chat';
 import { useAssets } from 'expo-asset';
-import { Image } from '@gluestack-ui/themed';
+import { Image, Text, View } from '@gluestack-ui/themed';
 import Bubble from '@/components/mali-chat/bubble';
 import { useSelector } from 'react-redux';
 
@@ -46,6 +44,7 @@ export default function AskMaliScreen() {
   ]);
 
   const [query, setQuery] = useState('');
+  const [showResetModal, setShowResetModal] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
@@ -82,19 +81,14 @@ export default function AskMaliScreen() {
 
   const startNewChat = useCallback(() => {
     if (messages.length === 0 && !query.trim()) return;
-
-    Alert.alert('Start new chat?', 'This clears your current conversation.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'New Chat',
-        style: 'destructive',
-        onPress: async () => {
-          clearChat();
-          setQuery('');
-        },
-      },
-    ]);
+    setShowResetModal(true);
   }, [messages.length, query]);
+
+  const confirmNewChat = useCallback(() => {
+    clearChat();
+    setQuery('');
+    setShowResetModal(false);
+  }, [clearChat]);
 
   const showIntro = messages.length === 0;
 
@@ -121,7 +115,7 @@ export default function AskMaliScreen() {
     return (
       <SafeAreaView style={{
         flex: 1,
-        backgroundColor: 'transparent',
+        backgroundColor: theme.background,
         alignItems: 'center',
       }} edges={['top', 'bottom']}>
         <View style={{
@@ -129,7 +123,7 @@ export default function AskMaliScreen() {
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <ActivityIndicator size="large" color={"#0B8F4D"} />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </SafeAreaView>
     );
@@ -141,7 +135,7 @@ export default function AskMaliScreen() {
         <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.header}>
             <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+              style={[styles.backButton, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}
               activeOpacity={0.7}
               onPress={handleBack}
             >
@@ -167,14 +161,14 @@ export default function AskMaliScreen() {
                   style={[
                     styles.botCard,
                     {
-                      backgroundColor: theme.primaryDim,
+                      backgroundColor: theme.glassSurface,
                       borderColor: theme.greenGlow,
                     },
                   ]}
                 >
                   <View style={styles.botTop}>
                     <View style={[styles.botBadge, { backgroundColor: theme.primary }]}>
-                      <Text style={styles.botBadgeText}>✦</Text>
+                      <Text style={[styles.botBadgeText, { color: theme.onPrimary }]}>✦</Text>
                     </View>
                     <View style={styles.botCopy}>
                       <Text style={[styles.botName, { color: theme.text }]}>Mali</Text>
@@ -196,8 +190,8 @@ export default function AskMaliScreen() {
                         style={[
                           styles.quickCard,
                           {
-                            backgroundColor: theme.card,
-                            borderColor: idx % 2 === 0 ? theme.greenGlow : theme.cardBorder,
+                            backgroundColor: theme.glassSurface,
+                            borderColor: idx % 2 === 0 ? theme.greenGlow : theme.glassBorder,
                           },
                         ]}
                         activeOpacity={0.8}
@@ -228,17 +222,17 @@ export default function AskMaliScreen() {
                     primary={theme.primary}
                     text={theme.text}
                     textDim={theme.textDim}
-                    card={theme.card}
-                    cardBorder={theme.cardBorder}
+                    card={theme.glassSurface}
+                    cardBorder={theme.glassBorder}
                   />
                 ))}
 
                 {isTyping && assets[0] && (
-                  <TypingDots bubbleColor={theme.card} borderColor={theme.cardBorder} />
+                  <TypingDots bubbleColor={theme.glassSurface} borderColor={theme.glassBorder} />
                 )}
 
                 {error && (
-                  <View style={[styles.errorBubble, { backgroundColor: theme.dangerDim, borderColor: theme.danger }]}>
+                  <View style={[styles.errorBubble, { backgroundColor: theme.toastErrorSurface, borderColor: theme.danger }]}> 
                     <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
                   </View>
                 )}
@@ -248,7 +242,7 @@ export default function AskMaliScreen() {
                     {suggestions.slice(0, 3).map((quickReply) => (
                       <TouchableOpacity
                         key={quickReply}
-                        style={[styles.quickChipSmall, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                        style={[styles.quickChipSmall, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}
                         activeOpacity={0.7}
                         onPress={() => sendMessage(quickReply)}
                       >
@@ -262,9 +256,9 @@ export default function AskMaliScreen() {
           </ScrollView>
 
           <View style={[styles.inputWrap, { backgroundColor: theme.background, borderTopColor: theme.cardBorder }]}>
-            <View style={[styles.composerRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={[styles.composerRow, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}> 
               <Pressable
-                style={[styles.newChatBtn, { backgroundColor: theme.surface, borderColor: theme.cardBorder }]}
+                style={[styles.newChatBtn, { backgroundColor: theme.subtleSurface, borderColor: theme.subtleBorder }]}
                 onPress={startNewChat}
               >
                 <MaterialIcons name="add" size={22} color={theme.text} />
@@ -289,9 +283,9 @@ export default function AskMaliScreen() {
                 disabled={!query.trim() || isTyping}
               >
                 {isTyping ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={theme.onPrimary} />
                 ) : (
-                  <MaterialIcons name="arrow-upward" size={20} color="#FFFFFF" />
+                  <MaterialIcons name="arrow-upward" size={20} color={theme.onPrimary} />
                 )}
               </Pressable>
             </View>
@@ -299,6 +293,31 @@ export default function AskMaliScreen() {
               AI-generated guidance can be wrong. Confirm important decisions.
             </Text>
           </View>
+
+          <Modal visible={showResetModal} transparent animationType="fade" onRequestClose={() => setShowResetModal(false)}>
+            <View style={[styles.modalOverlay, { backgroundColor: theme.modalBackdrop }]}> 
+              <View style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.glassBorder, shadowColor: theme.shadow }]}> 
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Start new chat?</Text>
+                <Text style={[styles.modalBody, { color: theme.textDim }]}>This clears your current conversation and starts a fresh thread with Mali.</Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.subtleSurface, borderColor: theme.subtleBorder }]}
+                    activeOpacity={0.8}
+                    onPress={() => setShowResetModal(false)}
+                  >
+                    <Text style={[styles.modalButtonText, { color: theme.text }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                    activeOpacity={0.8}
+                    onPress={confirmNewChat}
+                  >
+                    <Text style={[styles.modalButtonText, { color: theme.onPrimary }]}>New Chat</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -551,6 +570,52 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     opacity: 0.45,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 28,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontFamily: Fonts.sans,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  modalBody: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 18,
+  },
+  modalButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonPrimary: {
+    flexGrow: 1.1,
+  },
+  modalButtonText: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    fontWeight: '700',
   },
   disclaimer: {
     fontFamily: Fonts.sans,

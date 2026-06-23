@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
 import { Fonts } from '@/constants/fonts';
+import { Text, View } from '@gluestack-ui/themed';
 
 type NotificationItem = {
     id: string;
@@ -64,7 +66,7 @@ export default function Notifications() {
         <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]} edges={['top'] as any}>
             <View style={styles.header}>
                 <TouchableOpacity
-                    style={[styles.backButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                    style={[styles.backButton, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}
                     activeOpacity={0.75}
                     onPress={() => router.back()}
                 >
@@ -76,7 +78,7 @@ export default function Notifications() {
                     <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
                 </View>
 
-                <View style={[styles.unreadPill, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                <View style={[styles.unreadPill, { backgroundColor: theme.subtleSurface, borderColor: theme.subtleBorder }]}> 
                     <Text style={[styles.unreadPillText, { color: theme.primary }]}>{unreadCount} unread</Text>
                 </View>
             </View>
@@ -98,8 +100,8 @@ export default function Notifications() {
                                         style={[
                                             styles.card,
                                             {
-                                                backgroundColor: theme.card,
-                                                borderColor: item.read ? theme.cardBorder : theme.primary,
+                                                backgroundColor: theme.glassSurface,
+                                                borderColor: item.read ? theme.glassBorder : theme.primary,
                                             },
                                         ]}
                                     >
@@ -125,8 +127,8 @@ export default function Notifications() {
                         style={[
                             styles.emptyWrap,
                             {
-                                backgroundColor: theme.card,
-                                borderColor: theme.cardBorder,
+                                backgroundColor: theme.glassSurface,
+                                borderColor: theme.glassBorder,
                             },
                         ]}
                     >

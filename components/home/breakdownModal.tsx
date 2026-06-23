@@ -17,13 +17,14 @@ export default function BreakdownModal({
     const { theme } = useTheme();
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+            <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: theme.modalBackdrop }]} activeOpacity={1} onPress={onClose}>
                 <View
                     style={styles.modalContent}
-                    backgroundColor={theme.surface}
-                    borderColor={theme.cardBorder}
+                    backgroundColor={theme.glassSurface}
+                    borderColor={theme.glassBorder}
+                    shadowColor={theme.shadow}
                     onStartShouldSetResponder={() => true}>
-                    <View style={styles.modalHeader} borderBottomColor={theme.cardBorder}>
+                    <View style={styles.modalHeader} borderBottomColor={theme.divider}>
                         <Text style={styles.modalTitle} color={theme.text}>{title}</Text>
                         <TouchableOpacity onPress={onClose}>
                             <Text style={styles.modalCloseBtn} color={theme.textDim}>✕</Text>
@@ -41,7 +42,6 @@ export default function BreakdownModal({
 const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(13, 17, 23, 0.85)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
@@ -52,7 +52,6 @@ const styles = StyleSheet.create({
         width: '100%',
         maxHeight: '80%',
         padding: 20,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.5,
         shadowRadius: 24,

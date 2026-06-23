@@ -1,18 +1,18 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
-  View,
 } from 'react-native';
+import { Text, View } from '@gluestack-ui/themed';
 import { FeedItemUi, useFeed } from '@/hooks/use-feed';
 import { Spinner } from '@/components/ui/spinner';
 import { useTheme } from '@/contexts/theme-context';
 import { Fonts } from '@/constants/fonts';
 import FeedCard from '@/components/feed/feedCard';
+import { showAppToast, useToast } from '@/components/ui/toast';
 
 type BackendCategory =
   | 'fuel'
@@ -113,7 +113,9 @@ export default function FeedScreen() {
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('all');
   const { data, isLoading, isError, refetch, isFetching } = useFeed();
   const { theme } = useTheme();
+  const toast = useToast();
   const sc = useMemo(() => createScreenStyles(theme), [theme]);
+  const hasShownErrorToast = useRef(false);
 
   const feedItems = useMemo<FeedItemUi[]>(() => {
     const rows = (data as FeedApiItem[] | undefined) ?? [];
@@ -138,6 +140,22 @@ export default function FeedScreen() {
     await refetch();
   }, [refetch]);
 
+  useEffect(() => {
+    if (isError && !hasShownErrorToast.current) {
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Feed unavailable',
+        description: 'Could not load updates right now. Pull to refresh and try again.',
+        nativeIDPrefix: 'feed-error',
+      });
+      hasShownErrorToast.current = true;
+    }
+
+    if (!isError) {
+      hasShownErrorToast.current = false;
+    }
+  }, [isError, toast]);
+
   const now = new Date().toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
@@ -153,7 +171,7 @@ export default function FeedScreen() {
           <Text style={[sc.headerDate, { color: theme.textDim }]}>{now}</Text>
         </View>
 
-        <View style={[sc.livePill, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[sc.livePill, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}> 
           <View style={[sc.liveDot, { backgroundColor: theme.success }]} />
           <Text style={[sc.liveText, { color: theme.success }]}>Live</Text>
         </View>
@@ -179,7 +197,7 @@ export default function FeedScreen() {
                 sc.filterChip,
                 {
                   backgroundColor: isActive ? theme.primaryDim : theme.card,
-                  borderColor: isActive ? theme.primary : theme.cardBorder,
+                  borderColor: isActive ? theme.primary : theme.glassBorder,
                 },
               ]}
             >

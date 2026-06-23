@@ -7,19 +7,18 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,  
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAssets } from 'expo-asset';
+import { Text, View } from '@gluestack-ui/themed';
 import { useTheme } from '@/contexts/theme-context';
 import { Fonts } from '@/constants/fonts';
 import type { ThemeColors } from '@/constants/theme';
 import { loginWithGoogleNative, registerWithEmail } from '@/authentication/firebase-auth';
 import { useAuth } from '@/hooks/use-auth';
-import { useToast, Toast, ToastTitle, ToastDescription } from '@/components/ui/toast';
+import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toast';
 import SocialButton from '@/components/auth/socialButton';
 import MaliLogo from '@/components/auth/maliLogo';
 import FormInput from '@/components/auth/formInput';
@@ -89,15 +88,11 @@ export default function SignUp() {
           ? rawMessage
           : JSON.stringify(rawMessage);
 
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: resolveToastAction('error'),
+        title: 'Sign up failed',
+        description: message,
         duration: 4200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>Sign up failed</ToastTitle>
-            <ToastDescription numberOfLines={3}>{message}</ToastDescription>
-          </Toast>
-        ),
       });
       setIsSubmitting(false);
     }
@@ -113,21 +108,18 @@ export default function SignUp() {
       await socialFetchProfile(result);
       router.replace('/(tabs)');
     }
-    catch (error: any) {
+    catch (error: any) {      
       const rawMessage =
         error?.message ??
         error?.response?.data?.message ??
         'Google sign-in failed. Please try again.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
 
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: resolveToastAction('error'),
+        title: 'Google sign-in failed',
+        description: message,
         duration: 3500,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>{message}</ToastTitle>
-          </Toast>
-        ),
       });
     }
     finally {
@@ -198,7 +190,7 @@ export default function SignUp() {
 
               <Pressable style={sc.termsRow} onPress={() => setAgree((v) => !v)}>
                 <View style={[sc.checkbox, agree && sc.checkboxChecked]}>
-                  {agree ? <Ionicons name="checkmark" size={12} color="#FFFFFF" /> : null}
+                  {agree ? <Ionicons name="checkmark" size={12} color={theme.onPrimary} /> : null}
                 </View>
                 <Text style={sc.termsText}>
                   I agree to the <Text style={sc.linkText}>Terms of Service</Text> and{' '}
@@ -212,7 +204,7 @@ export default function SignUp() {
                 disabled={!canSubmit || isSubmitting}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator color="#F7FFF9" />
+                  <ActivityIndicator color={theme.onPrimary} />
                 ) : (
                   <Text style={sc.signUpText}>Create Account</Text>
                 )}
@@ -262,7 +254,7 @@ const makeStyles = (theme: ThemeColors) =>
     bgImage: {
       flex: 1,
       width: '100%',
-      backgroundColor: '#040910',
+      backgroundColor: theme.background,
     },
 
     safe: {
@@ -281,11 +273,11 @@ const makeStyles = (theme: ThemeColors) =>
     card: {
       borderRadius: 28,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
-      backgroundColor: 'rgba(8,14,24,0.5)',
+      borderColor: theme.cardTBorder,
+      backgroundColor: theme.cardT,      
       paddingHorizontal: 18,
       paddingVertical: 20,
-      shadowColor: '#000',
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.35,
       shadowRadius: 20,
@@ -306,7 +298,7 @@ const makeStyles = (theme: ThemeColors) =>
       borderRadius: 5,
       marginTop: 1,
       borderWidth: 1.2,
-      borderColor: 'rgba(255,255,255,0.35)',
+      borderColor: theme.inputBorder,
       backgroundColor: 'transparent',
       alignItems: 'center',
       justifyContent: 'center',
@@ -341,13 +333,13 @@ const makeStyles = (theme: ThemeColors) =>
       marginBottom: 14,
     },
     signUpBtnDisabled: {
-      backgroundColor: '#3E4A5E',
+      backgroundColor: theme.disabledSurface,
       shadowOpacity: 0.12,
       elevation: 2,
     },
     signUpText: {
       fontFamily: Fonts.sans,
-      color: '#F7FFF9',
+      color: theme.onPrimary,
       fontSize: 16,
       fontWeight: '800',
       letterSpacing: 0.2,
@@ -362,7 +354,7 @@ const makeStyles = (theme: ThemeColors) =>
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: 'rgba(255,255,255,0.12)',
+      backgroundColor: theme.subtleBorder,
     },
     dividerText: {
       fontFamily: Fonts.sans,
@@ -374,25 +366,6 @@ const makeStyles = (theme: ThemeColors) =>
       flexDirection: 'row',
       gap: 10,
     },
-    socialBtn: {
-      flex: 1,
-      height: 44,
-      borderRadius: 11,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
-      backgroundColor: 'rgba(255,255,255,0.02)',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    socialText: {
-      fontFamily: Fonts.sans,
-      color: theme.text,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-
     footerRow: {
       flexDirection: 'row',
       justifyContent: 'center',

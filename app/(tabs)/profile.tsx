@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text } from '@gluestack-ui/themed';
+import { Text, View } from '@gluestack-ui/themed';
 import { useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { updateUserPassword } from '@/authentication/firebase-auth';
 import { useTheme } from '@/contexts/theme-context';
 import { useSelector } from 'react-redux';
 import { useProfile } from '@/hooks/use-profile';
-import { Toast, ToastDescription, ToastTitle, useToast } from '@/components/ui/toast';
+import { showAppToast, useToast } from '@/components/ui/toast';
 import { firebaseLogout } from '@/authentication/firebase-auth';
 import { setIsAuthenticated, setToken, setUserProfile } from '@/redux/UserProfileSlice';
 
@@ -32,9 +32,9 @@ export default function Profile() {
 
   const [nameInput, setNameInput] = useState(fullName);
 
-  const [currentPassword, setCurrentPassword] = useState('Lotus@008');
-  const [newPassword, setNewPassword] = useState('Lotus@009');
-  const [confirmPassword, setConfirmPassword] = useState('Lotus@009');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -50,15 +50,11 @@ export default function Profile() {
 
   const onUpdateProfile = async () => {
     if (!nameInput.trim()) {
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'warning',
+        title: 'Missing details',
+        description: 'Please provide both full name and email.',
         duration: 3200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="warning" variant="outline">
-            <ToastTitle>Missing details</ToastTitle>
-            <ToastDescription numberOfLines={3}>Please provide both full name and email.</ToastDescription>
-          </Toast>
-        ),
       });
       return;
     }
@@ -68,15 +64,11 @@ export default function Profile() {
         fullname: nameInput.trim(),
         id: userProfile.id
       });
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'success',
+        title: 'Success',
+        description: 'Your profile details were updated.',
         duration: 3200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="success" variant="outline">
-            <ToastTitle>Success</ToastTitle>
-            <ToastDescription numberOfLines={3}>Your profile details were updated.</ToastDescription>
-          </Toast>
-        ),
       });
     } catch (error: any) {
       const rawMessage =
@@ -85,44 +77,32 @@ export default function Profile() {
         'Could not update profile right now.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
 
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Update failed',
+        description: message,
         duration: 4200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>Update failed</ToastTitle>
-            <ToastDescription numberOfLines={3}>{message}</ToastDescription>
-          </Toast>
-        ),
       });
     }
   };
 
   const onChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'warning',
+        title: 'Missing details',
+        description: 'Please fill in all password fields.',
         duration: 3200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="warning" variant="outline">
-            <ToastTitle>Missing details</ToastTitle>
-            <ToastDescription numberOfLines={3}>Please fill in all password fields.</ToastDescription>
-          </Toast>
-        ),
       });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'warning',
+        title: 'Password mismatch',
+        description: 'New password and confirmation must match.',
         duration: 3200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="warning" variant="outline">
-            <ToastTitle>Password mismatch</ToastTitle>
-            <ToastDescription numberOfLines={3}>New password and confirmation must match.</ToastDescription>
-          </Toast>
-        ),
       });
       return;
     }
@@ -134,15 +114,11 @@ export default function Profile() {
       setNewPassword('');
       setConfirmPassword('');
       setIsChangingPassword(false);
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'success',
+        title: 'Success',
+        description: 'Your password was changed successfully.',
         duration: 3200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="success" variant="outline">
-            <ToastTitle>Success</ToastTitle>
-            <ToastDescription numberOfLines={3}>Your password was changed successfully.</ToastDescription>
-          </Toast>
-        ),
       });
     } 
     catch (error: any) {
@@ -154,15 +130,11 @@ export default function Profile() {
         'Could not change password right now.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
       setIsChangingPassword(false);
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Change failed',
+        description: message,
         duration: 4200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>Change failed</ToastTitle>
-            <ToastDescription numberOfLines={3}>{message}</ToastDescription>
-          </Toast>
-        ),
       });
     }
   };
@@ -181,15 +153,11 @@ export default function Profile() {
         'Could not sign out right now.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
 
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Sign out failed',
+        description: message,
         duration: 4200,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>Sign out failed</ToastTitle>
-            <ToastDescription numberOfLines={3}>{message}</ToastDescription>
-          </Toast>
-        ),
       });
     }
   };
@@ -223,7 +191,7 @@ export default function Profile() {
         <Text style={[styles.pageTitle, { color: theme.text }]}>My Profile</Text>
         <Text style={[styles.subtitle, { color: theme.textDim }]}>A polished space for your identity, security, and preferences.</Text>
 
-        <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.heroCard, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder, shadowColor: theme.shadow }]}>
           <View style={styles.headerRow}>
             {photoUrl ? (
               <View style={[styles.avatarRing, { borderColor: theme.primary }]}>
@@ -245,7 +213,7 @@ export default function Profile() {
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.card, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder, shadowColor: theme.shadow }]}>
           <Text fontWeight="700" style={[styles.sectionTitle, { color: theme.text }]}>Theme</Text>
           <Text style={[styles.cardText, { color: theme.textDim, marginBottom: 14 }]}>Theme switch customization is coming soon.</Text>
           <View style={[styles.themeRow, styles.mutedThemeRow, { borderColor: theme.cardBorder, backgroundColor: theme.surface }]}>
@@ -259,7 +227,7 @@ export default function Profile() {
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.card, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder, shadowColor: theme.shadow }]}>
           <Text fontWeight="700" style={[styles.sectionTitle, { color: theme.text }]}>Settings</Text>
 
           <View
@@ -327,14 +295,14 @@ export default function Profile() {
                       style={[
                         styles.actionButton,
                         {
-                          backgroundColor: !hasNameChanged || updateProfile.isPending ? '#6B7280' : theme.primary,
+                          backgroundColor: !hasNameChanged || updateProfile.isPending ? theme.disabledSurface : theme.primary,
                           opacity: !hasNameChanged || updateProfile.isPending ? 0.85 : 1,
                         },
                       ]}
                       onPress={onUpdateProfile}
                       disabled={!hasNameChanged || updateProfile.isPending}
                     >
-                      <Text fontWeight="700" style={styles.toggleText}>
+                      <Text fontWeight="700" style={[styles.toggleText, { color: theme.onPrimary }]}>
                         {updateProfile.isPending ? 'Updating...' : 'Update Profile'}
                       </Text>
                     </Pressable>
@@ -416,14 +384,14 @@ export default function Profile() {
                   style={[
                     styles.actionButton,
                     {
-                      backgroundColor: !hasPasswordInput || isChangingPassword ? '#6B7280' : theme.primary,
+                      backgroundColor: !hasPasswordInput || isChangingPassword ? theme.disabledSurface : theme.primary,
                       opacity: !hasPasswordInput || isChangingPassword ? 0.85 : 1,
                     },
                   ]}
                   onPress={onChangePassword}
                   disabled={!hasPasswordInput || isChangingPassword}
                 >
-                  <Text fontWeight="700" style={styles.toggleText}>
+                  <Text fontWeight="700" style={[styles.toggleText, { color: theme.onPrimary }]}>
                     {isChangingPassword ? 'Updating...' : 'Change Password'}
                   </Text>
                 </Pressable>
@@ -489,7 +457,6 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    shadowColor: '#000',
     shadowOpacity: 0.22,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
@@ -543,7 +510,6 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    shadowColor: '#000',
     shadowOpacity: 0.18,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
@@ -630,7 +596,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toggleText: {
-    color: '#FFF',
     fontSize: 14,
     letterSpacing: 0.2,
   },

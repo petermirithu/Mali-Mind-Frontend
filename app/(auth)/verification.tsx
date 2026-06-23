@@ -7,18 +7,17 @@ import {
     Pressable,
     ScrollView,
     StyleSheet,
-    Text,
     TextInput,
-    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAssets } from 'expo-asset';
+import { Text, View } from '@gluestack-ui/themed';
 import { useTheme } from '@/contexts/theme-context';
 import { Fonts } from '@/constants/fonts';
 import type { ThemeColors } from '@/constants/theme';
-import { useToast, Toast, ToastTitle, ToastDescription } from '@/components/ui/toast';
+import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
 
 type VerifyBody = {
@@ -77,28 +76,20 @@ export default function Verification() {
             const response = await verifyEmailAsync(payload);
 
             if (response.status == "success") {
-                toast.show({
-                    placement: 'bottom',
+                showAppToast(toast, {
+                    action: resolveToastAction('success'),
+                    title: 'Success',
+                    description: 'Email verified successfully. Please sign in.',
                     duration: 3200,
-                    render: ({ id }) => (
-                        <Toast nativeID={`toast-${id}`} action="success" variant="outline">
-                            <ToastTitle>Success</ToastTitle>
-                            <ToastDescription numberOfLines={3}>Email verified successfully. Please sign in.</ToastDescription>
-                        </Toast>
-                    ),
                 });
                 router.replace('/(auth)/sign-in');
             }
             else{
-                toast.show({
-                    placement: 'bottom',
+                showAppToast(toast, {
+                    action: resolveToastAction(response.status),
+                    title: response.status,
+                    description: response.message,
                     duration: 3200,
-                    render: ({ id }) => (
-                        <Toast nativeID={`toast-${id}`} action={response.status} variant="outline">
-                            <ToastTitle>{response.status}</ToastTitle>
-                            <ToastDescription numberOfLines={3}>{response.message}</ToastDescription>
-                        </Toast>
-                    ),
                 });
             }
         } catch (error: any) {
@@ -108,15 +99,11 @@ export default function Verification() {
                 'Unable to verify code. Please try again.';
             const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
 
-            toast.show({
-                placement: 'bottom',
+            showAppToast(toast, {
+                action: resolveToastAction('error'),
+                title: 'Verification failed',
+                description: message,
                 duration: 4200,
-                render: ({ id }) => (
-                    <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-                        <ToastTitle>Verification failed</ToastTitle>
-                        <ToastDescription numberOfLines={3}>{message}</ToastDescription>
-                    </Toast>
-                ),
             });
         } finally {
             setIsSubmitting(false);
@@ -130,15 +117,11 @@ export default function Verification() {
         try {
             const response = await resendVerificationAsync({ email: safeEmail.trim() });
 
-            toast.show({
-                placement: 'bottom',
+            showAppToast(toast, {
+                action: resolveToastAction(response.status),
+                title: response.status,
+                description: response.message,
                 duration: 3200,
-                render: ({ id }) => (
-                    <Toast nativeID={`toast-${id}`} action={response.status} variant="outline">
-                        <ToastTitle>{response.status}</ToastTitle>
-                        <ToastDescription numberOfLines={3}>{response.message}</ToastDescription>
-                    </Toast>
-                ),
             });
         } catch (error: any) {
             const rawMessage =
@@ -147,15 +130,11 @@ export default function Verification() {
                 'Unable to resend verification code.';
             const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
 
-            toast.show({
-                placement: 'bottom',
+            showAppToast(toast, {
+                action: resolveToastAction('error'),
+                title: 'Verification failed',
+                description: message,
                 duration: 4200,
-                render: ({ id }) => (
-                    <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-                        <ToastTitle>Verification failed</ToastTitle>
-                        <ToastDescription numberOfLines={3}>{message}</ToastDescription>
-                    </Toast>
-                ),
             });
         } finally {
             setIsResending(false);
@@ -164,15 +143,11 @@ export default function Verification() {
 
     useEffect(() => {
         if (!safeEmail) {
-            toast.show({
-                placement: 'bottom',
+            showAppToast(toast, {
+                action: resolveToastAction('warning'),
+                title: 'Email required',
+                description: 'Please sign up again to receive a verification code.',
                 duration: 3000,
-                render: ({ id }) => (
-                    <Toast nativeID={`toast-${id}`} action="warning" variant="outline">
-                        <ToastTitle>Email required</ToastTitle>
-                        <ToastDescription>Please sign up again to receive a verification code.</ToastDescription>
-                    </Toast>
-                ),
             });
             router.replace('/(auth)/sign-up');
         }
@@ -231,7 +206,7 @@ export default function Verification() {
                                 disabled={!canSubmit || isSubmitting}
                             >
                                 {isSubmitting ? (
-                                    <ActivityIndicator color="#F7FFF9" />
+                                    <ActivityIndicator color={theme.onPrimary} />
                                 ) : (
                                     <Text style={sc.primaryBtnText}>Verify Account</Text>
                                 )}
@@ -278,7 +253,7 @@ const makeStyles = (theme: ThemeColors) =>
         bgImage: {
             flex: 1,
             width: '100%',
-            backgroundColor: '#040910',
+            backgroundColor: theme.background,
         },
         safe: {
             flex: 1,
@@ -295,11 +270,11 @@ const makeStyles = (theme: ThemeColors) =>
         card: {
             borderRadius: 28,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.08)',
-            backgroundColor: 'rgba(8,14,24,0.5)',
+            borderColor: theme.glassBorder,
+            backgroundColor: theme.glassSurface,
             paddingHorizontal: 18,
             paddingVertical: 20,
-            shadowColor: '#000',
+            shadowColor: theme.shadow,
             shadowOffset: { width: 0, height: 10 },
             shadowOpacity: 0.35,
             shadowRadius: 20,
@@ -370,8 +345,8 @@ const makeStyles = (theme: ThemeColors) =>
             minHeight: 48,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.10)',
-            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderColor: theme.inputBorder,
+            backgroundColor: theme.inputSurface,
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 12,
@@ -401,13 +376,13 @@ const makeStyles = (theme: ThemeColors) =>
             marginBottom: 10,
         },
         primaryBtnDisabled: {
-            backgroundColor: '#3E4A5E',
+            backgroundColor: theme.disabledSurface,
             shadowOpacity: 0.12,
             elevation: 2,
         },
         primaryBtnText: {
             fontFamily: Fonts.sans,
-            color: '#F7FFF9',
+            color: theme.onPrimary,
             fontSize: 16,
             fontWeight: '800',
             letterSpacing: 0.2,
@@ -416,8 +391,8 @@ const makeStyles = (theme: ThemeColors) =>
             height: 46,
             borderRadius: 999,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.18)',
-            backgroundColor: 'rgba(255,255,255,0.02)',
+            borderColor: theme.subtleBorder,
+            backgroundColor: theme.subtleSurface,
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: 12,

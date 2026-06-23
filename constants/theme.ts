@@ -5,6 +5,20 @@ export interface ThemeColors {
   surface: string;
   card: string;
   cardBorder: string;
+  cardT: string;
+  cardTBorder: string;
+  glassSurface: string;
+  glassBorder: string;
+  inputSurface: string;
+  inputBorder: string;
+  subtleSurface: string;
+  subtleBorder: string;
+  disabledSurface: string;
+  onPrimary: string;
+  successSurface: string;
+  successBorder: string;
+  modalBackdrop: string;
+  divider: string;
   text: string;
   textDim: string;
   primary: string;
@@ -24,6 +38,18 @@ export interface ThemeColors {
   greenEndFillColor: string;
   redStartFillColor: string;
   redEndFillColor: string;
+  pulsePositiveSurface: string;
+  pulsePositiveBorder: string;
+  pulseNegativeSurface: string;
+  pulseNegativeBorder: string;
+  pulseNeutralSurface: string;
+  pulseNeutralBorder: string;
+  toastErrorSurface: string;
+  toastWarningSurface: string;
+  toastSuccessSurface: string;
+  toastInfoSurface: string;
+  toastMutedSurface: string;
+  toastCloseSurface: string;
   feedInsightBorder?: string;
   feedInsightGlow?: string;
 }
@@ -32,54 +58,106 @@ export const themes: Record<ThemeMode, ThemeColors> = {
   dark: {
     background: '#0B0F14',
     surface: '#121821',
-    card: 'rgba(255,255,255,0.05)',
-    cardBorder: 'rgba(255,255,255,0.12)',
+    card: '#151C26',
+    cardBorder: '#273241',
+    cardT: 'rgba(8,14,24,0.6)',
+    cardTBorder: 'rgba(255,255,255,0.08)',    
+    glassSurface: '#101923',
+    glassBorder: '#223041',
+    inputSurface: '#16202B',
+    inputBorder: '#2A394D',
+    subtleSurface: '#18212C',
+    subtleBorder: '#29384A',
+    disabledSurface: '#3E4A5E',
+    onPrimary: '#F7FFF9',
+    successSurface: '#173927',
+    successBorder: '#2C6B45',
+    modalBackdrop: '#0D1117',
+    divider: '#243044',
     text: '#E5E8EC',
     textDim: '#9AA2B3',
     primary: '#0B8F4D',
-    primaryDim: 'rgba(11,143,77,0.15)',
+    primaryDim: '#143425',
     success: '#22C55E',
     warning: '#FBBF24',
-    warningDim: 'rgba(251,191,36,0.14)',
+    warningDim: '#423413',
     danger: '#EF4444',
-    dangerDim: 'rgba(239,68,68,0.15)',
+    dangerDim: '#351A20',
     accent: '#38BDF8',
-    accentDim: 'rgba(56,189,248,0.14)',
-    overlay: 'rgba(11,15,20,0.72)',
+    accentDim: '#163448',
+    overlay: '#111821',
     shadow: 'rgba(0, 0, 0, 0.32)',
-    greenDim: 'rgba(11,143,77,0.15)',
-    greenGlow: 'rgba(11,143,77,0.35)',
+    greenDim: '#143425',
+    greenGlow: '#2B6B46',
     greenStartFillColor: 'rgba(11,143,77,0.4)',
     greenEndFillColor: 'rgba(11,143,77,0)',
     redStartFillColor: 'rgba(240,91,91,0.4)',
     redEndFillColor: 'rgba(240,91,91,0)',
+    pulsePositiveSurface: '#13261C',
+    pulsePositiveBorder: '#2E6C48',
+    pulseNegativeSurface: '#2C1A1E',
+    pulseNegativeBorder: '#7C3B42',
+    pulseNeutralSurface: '#342915',
+    pulseNeutralBorder: '#8A6926',
+    toastErrorSurface: '#3D1F24',
+    toastWarningSurface: '#4A3516',
+    toastSuccessSurface: '#173927',
+    toastInfoSurface: '#143449',
+    toastMutedSurface: '#1D2734',
+    toastCloseSurface: '#273241',
     feedInsightBorder: 'rgba(11,143,77,0.30)',
     feedInsightGlow: 'rgba(11,143,77,0.22)',
   },
   light: {
     background: '#F5F7FA',
     surface: '#FFFFFF',
-    card: 'rgba(255,255,255,0.92)',
-    cardBorder: 'rgba(15,23,42,0.08)',
+    card: '#FFFFFF',
+    cardBorder: '#D6DEE8',
+    cardT: 'rgba(8,14,24,0.6)',
+    cardTBorder: 'rgba(255,255,255,0.08)',    
+    glassSurface: '#FAFCFE',
+    glassBorder: '#D6DEE8',
+    inputSurface: '#F5F7FB',
+    inputBorder: '#D6DEE8',
+    subtleSurface: '#EEF2F7',
+    subtleBorder: '#D6DEE8',
+    disabledSurface: '#B8C3D1',
+    onPrimary: '#F7FFF9',
+    successSurface: '#E7F7EC',
+    successBorder: '#A9D9B7',
+    modalBackdrop: '#DDE4EC',
+    divider: '#D7DFE9',
     text: '#111827',
     textDim: '#6B7280',
     primary: '#0B8F4D',
-    primaryDim: 'rgba(11,143,77,0.15)',
+    primaryDim: '#E4F3EA',
     success: '#16A34A',
     warning: '#D97706',
-    warningDim: 'rgba(217,119,6,0.14)',
+    warningDim: '#FCEECC',
     danger: '#B91C1C',
-    dangerDim: 'rgba(185,28,28,0.15)',
+    dangerDim: '#F8E5E7',
     accent: '#0EA5E9',
-    accentDim: 'rgba(14,165,233,0.14)',
-    overlay: 'rgba(255,255,255,0.72)',
+    accentDim: '#E3F2FA',
+    overlay: '#EFF4F9',
     shadow: 'rgba(15, 23, 42, 0.08)',
-    greenDim: 'rgba(11,143,77,0.15)',
-    greenGlow: 'rgba(11,143,77,0.35)',
+    greenDim: '#E4F3EA',
+    greenGlow: '#9ED4B6',
     greenStartFillColor: 'rgba(11,143,77,0.4)',
     greenEndFillColor: 'rgba(11,143,77,0)',
     redStartFillColor: 'rgba(240,91,91,0.4)',
     redEndFillColor: 'rgba(240,91,91,0)',
+    pulsePositiveSurface: '#E8F4EC',
+    pulsePositiveBorder: '#98C8AA',
+    pulseNegativeSurface: '#F9E8EA',
+    pulseNegativeBorder: '#D7A2A9',
+    pulseNeutralSurface: '#FBF1DE',
+    pulseNeutralBorder: '#D9BA76',
+    toastErrorSurface: '#FCE8E8',
+    toastWarningSurface: '#FEF3D5',
+    toastSuccessSurface: '#E7F7EC',
+    toastInfoSurface: '#E4F4FB',
+    toastMutedSurface: '#EEF2F7',
+    toastCloseSurface: '#E5EBF1',
     feedInsightBorder: 'rgba(11,143,77,0.26)',
     feedInsightGlow: 'rgba(11,143,77,0.18)',
   },

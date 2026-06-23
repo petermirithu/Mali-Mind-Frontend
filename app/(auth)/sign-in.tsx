@@ -9,17 +9,15 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAssets } from 'expo-asset';
+import { Text, View } from '@gluestack-ui/themed';
 import { Fonts } from '../../constants/fonts';
 import type { ThemeColors } from '../../constants/theme';
 import { useTheme } from '../../contexts/theme-context';
 import { loginWithEmail, loginWithGoogleNative } from '../../authentication/firebase-auth';
-import { useToast, Toast, ToastTitle } from '@/components/ui/toast';
+import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toast';
 import { useAuth } from '@/hooks/use-auth';
 import * as WebBrowser from 'expo-web-browser';
 import SocialButton from '@/components/auth/socialButton';
@@ -47,7 +45,7 @@ export default function SignIn() {
 
   const canSubmit = email.trim().includes('@') && password.trim().length >= 8;
 
-  const onSignIn = async () => {
+  const onSignIn = async () => {    
     if (!canSubmit || isSigningIn) return;
 
     setIsSigningIn(true);
@@ -63,15 +61,12 @@ export default function SignIn() {
         error?.response?.data?.message ??
         'Unable to sign in. Please try again.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
-
-      toast.show({
-        placement: 'bottom',
+      
+      showAppToast(toast, {
+        action: resolveToastAction('error'),
+        title: 'Sign in failed',
+        description: message,
         duration: 3500,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>{message}</ToastTitle>
-          </Toast>
-        ),
       });
     }
     finally {
@@ -89,20 +84,21 @@ export default function SignIn() {
       router.replace('/(tabs)');
     } 
     catch (error: any) {
+      console.log("Sign error...")
+      console.log(error)
+
+      
       const rawMessage =
         error?.message ??
         error?.response?.data?.message ??
         'Google sign-in failed. Please try again.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
 
-      toast.show({
-        placement: 'bottom',
+      showAppToast(toast, {
+        action: resolveToastAction('error'),
+        title: 'Google sign-in failed',
+        description: message,
         duration: 3500,
-        render: ({ id }) => (
-          <Toast nativeID={`toast-${id}`} action="error" variant="outline">
-            <ToastTitle>{message}</ToastTitle>
-          </Toast>
-        ),
       });
     } 
     finally {
@@ -148,7 +144,7 @@ export default function SignIn() {
             <View style={sc.card}>
               <MaliLogo 
                 theme={theme} 
-                title='Welcomes back'
+                title='Welcome back'
                 subTitle='Sign in to continue to your account.'
                 />
 
@@ -244,12 +240,12 @@ const makeStyles = (theme: ThemeColors) =>
 
     card: {
       borderRadius: 28,
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
-      backgroundColor: 'rgba(8,14,24,0.5)',
+      borderWidth: 1,      
+      borderColor: theme.cardTBorder,
+      backgroundColor: theme.cardT,
       paddingHorizontal: 18,
       paddingVertical: 20,
-      shadowColor: '#000',
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.35,
       shadowRadius: 20,
@@ -281,13 +277,13 @@ const makeStyles = (theme: ThemeColors) =>
       elevation: 8,
     },
     signInBtnDisabled: {
-      backgroundColor: '#3E4A5E',
+      backgroundColor: theme.disabledSurface,
       shadowOpacity: 0.12,
       elevation: 2,
     },
     signInText: {
       fontFamily: Fonts.sans,
-      color: '#F7FFF9',
+      color: theme.onPrimary,
       fontSize: 16,
       fontWeight: '800',
       letterSpacing: 0.2,
@@ -303,7 +299,7 @@ const makeStyles = (theme: ThemeColors) =>
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: 'rgba(255,255,255,0.12)',
+      backgroundColor: theme.subtleBorder,
     },
     dividerText: {
       fontFamily: Fonts.sans,

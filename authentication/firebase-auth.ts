@@ -25,7 +25,7 @@ function ensureGoogleConfigured() {
 
   GoogleSignin.configure({
     webClientId: process.env.EXPO_PUBLIC_FIREBASE_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_FIREBASE_GOOGLE_IOS_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_FIREBASE_GOOGLE_IOS_CLIENT_ID,    
     offlineAccess: true,
   });
 
@@ -136,6 +136,11 @@ export async function loginWithGoogleNative(): Promise<{ token: string; email: s
 
     return { token, email, firebase_uid, fullname, photo_url };
   } catch (error: any) {
+
+    console.log("Error.....")
+    console.log(error)
+
+
     if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
       throw { code: error?.code, message: 'Google sign-in was cancelled.', status: 'error' };
     }

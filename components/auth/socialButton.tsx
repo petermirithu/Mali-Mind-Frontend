@@ -2,8 +2,9 @@ import { Fonts } from "@/constants/fonts";
 import { ThemeColors } from "@/constants/theme";
 import { useTheme } from "@/contexts/theme-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Text } from "@gluestack-ui/themed";
 import { useMemo } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 
 export default function SocialButton({
     label,
@@ -34,8 +35,8 @@ const makeStyles = (theme: ThemeColors) =>
             height: 44,
             borderRadius: 11,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.12)',
-            backgroundColor: 'rgba(255,255,255,0.02)',
+            borderColor: theme.subtleBorder,
+            backgroundColor: theme.subtleSurface,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',

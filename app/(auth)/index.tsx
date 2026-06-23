@@ -6,10 +6,9 @@ import {
   ImageBackground,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text } from '@gluestack-ui/themed';
+import { Text, View } from '@gluestack-ui/themed';
 import { useAssets } from 'expo-asset';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { router } from 'expo-router';
@@ -102,7 +101,7 @@ export default function GetStartedScreen() {
   }
 
   return (
-    <ImageBackground source={{ uri: assets[0].localUri ?? assets[0].uri }} style={sc.bgImage} resizeMode="contain">
+    <ImageBackground source={{ uri: assets[0].localUri ?? assets[0].uri }} style={sc.bgImage} resizeMode="cover">
       <SafeAreaView style={sc.screen} edges={['top', 'bottom']}>
         <View style={sc.bottomContent}>
           <MaliLogo opacity={logoOpacity} scale={logoScale} theme={theme} />
@@ -123,8 +122,8 @@ export default function GetStartedScreen() {
               <Svg style={StyleSheet.absoluteFillObject} width="100%" height="100%">
                 <Defs>
                   <RadialGradient id="btnGlow" cx="50%" cy="0%" r="80%">
-                    <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.18" />
-                    <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+                    <Stop offset="0%" stopColor={theme.onPrimary} stopOpacity="0.18" />
+                    <Stop offset="100%" stopColor={theme.onPrimary} stopOpacity="0" />
                   </RadialGradient>
                 </Defs>
                 <Rect width="100%" height="100%" rx={16} fill="url(#btnGlow)" />
@@ -159,7 +158,7 @@ const makeStyles = (theme: ThemeColors) =>
     bgImage: {
       flex: 1,
       width: '100%',
-      backgroundColor: theme.background,
+      backgroundColor: theme.background,      
     },
 
     bottomContent: {
@@ -254,7 +253,7 @@ const makeStyles = (theme: ThemeColors) =>
       fontFamily: Fonts.sans,
       fontSize: 18,
       fontWeight: '700',
-      color: theme.text,
+      color: theme.onPrimary,
       letterSpacing: 0.4,
     },
 

@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, View } from '@gluestack-ui/themed';
 import { useDashboard, type DashboardFoodBasket } from '@/hooks/use-dashboard';
 import { useTheme } from '@/contexts/theme-context';
+import { Fonts } from '@/constants/fonts';
 import Card from '@/components/home/card';
 import SparklineChart from '@/components/home/sparklineChart';
 import IndicatorCard from '@/components/home/indicatorCard';
@@ -17,16 +18,19 @@ import BreakdownModal from '@/components/home/breakdownModal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
+import { showAppToast, useToast } from '@/components/ui/toast';
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const toast = useToast();
   const { userProfile } = useSelector((state: any) => state.userProfile);
 
-  const { data: dashboard, isLoading } = useDashboard();
+  const { data: dashboard, isLoading, isError, error, refetch } = useDashboard();
   const [selectedIndicator, setSelectedIndicator] = useState<'food' | 'fuel' | 'forex' | null>(null);
   const [activeInsightIndex, setActiveInsightIndex] = useState(0);
+  const hasShownErrorToast = useRef(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
@@ -55,12 +59,34 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  if (isLoading || !dashboard) {  
+  useEffect(() => {
+    if (isError && !hasShownErrorToast.current) {
+      const rawMessage =
+        (error as any)?.response?.data?.message ??
+        (error as Error | undefined)?.message ??
+        'Unable to load the latest dashboard snapshot.';
+
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Dashboard unavailable',
+        description: typeof rawMessage === 'string' ? rawMessage : 'Please try again in a moment.',
+        nativeIDPrefix: 'dashboard-error',
+        duration: 4200,
+      });
+      hasShownErrorToast.current = true;
+    }
+
+    if (!isError) {
+      hasShownErrorToast.current = false;
+    }
+  }, [error, isError, toast]);
+
+  if (isLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top']}>
         <View style={[styles.header, { paddingHorizontal: 16, paddingVertical: 14, }]}>
           <View>
-            <Text style={styles.greeting} color={theme.text}>Hello, {userProfile.fullname} 👋</Text>
+            <Text style={styles.greeting} color={theme.text}>Hello, {getFirstName(userProfile?.fullname ?? 'there')} 👋</Text>
             <Text style={styles.date} color={theme.textDim}>{today}</Text>
           </View>
           <TouchableOpacity
@@ -76,6 +102,42 @@ export default function HomeScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.primary} />
           <Text style={{ color: theme.textDim, marginTop: 12, fontSize: 14 }}>Loading ...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError || !dashboard) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top']}>
+        <View style={[styles.header, { paddingHorizontal: 16, paddingVertical: 14 }]}> 
+          <View>
+            <Text style={styles.greeting} color={theme.text}>Hello, {getFirstName(userProfile?.fullname ?? 'there')} 👋</Text>
+            <Text style={styles.date} color={theme.textDim}>{today}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.bellBtn, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="notifications" size={24} color={theme.textDim} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorStateWrap}>
+          <Card style={[styles.errorCard, { borderColor: theme.pulseNegativeBorder }]}> 
+            <Text style={styles.errorEmoji}>⚠️</Text>
+            <Text style={styles.errorTitle} color={theme.text}>Couldn&apos;t load your dashboard</Text>
+            <Text style={styles.errorBody} color={theme.textDim}>
+              Pull a fresh snapshot from Mali to restore the latest prices and insights.
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => refetch()}
+              style={[styles.retryButton, { backgroundColor: theme.primary }]}
+            >
+              <Text style={styles.retryButtonText} color={theme.onPrimary}>Retry</Text>
+            </TouchableOpacity>
+          </Card>
         </View>
       </SafeAreaView>
     );
@@ -220,8 +282,8 @@ export default function HomeScreen() {
             </View>
             <TouchableOpacity
               style={[styles.bellBtn, {
-                backgroundColor: theme.card,
-                borderColor: theme.cardBorder
+                backgroundColor: theme.glassSurface,
+                borderColor: theme.glassBorder
               }]}
               onPress={() => router.push('/notifications')}
               activeOpacity={0.7}>
@@ -231,8 +293,8 @@ export default function HomeScreen() {
 
           {/* ── Cost of Living Pulse ──────────────────────────────────────── */}
           <Card style={[styles.pulseCard, {
-            backgroundColor: pulseIsDown ? 'rgba(11, 143, 77, 0.05)' : 'rgba(235, 87, 87, 0.05)',
-            borderColor: pulseIsDown ? 'rgba(11, 143, 77, 0.3)' : 'rgba(235, 87, 87, 0.3)',
+            backgroundColor: pulseIsDown ? theme.pulsePositiveSurface : theme.pulseNegativeSurface,
+            borderColor: pulseIsDown ? theme.pulsePositiveBorder : theme.pulseNegativeBorder,
             borderWidth: 1.5,
             padding: 16,
           }]}>
@@ -311,7 +373,10 @@ export default function HomeScreen() {
           </View>
 
           {/* ── AI Insight ────────────────────────────────────────────────── */}
-          <Card style={styles.insightCard}>
+          <Card style={[styles.insightCard, {
+            borderColor: theme.pulsePositiveBorder,
+            backgroundColor: theme.pulsePositiveSurface,
+          }]}> 
             <View style={styles.insightTopRow}>
               <View style={styles.insightTitleRow}>
                 <View style={styles.insightDot} backgroundColor={theme.primary} />
@@ -320,10 +385,7 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.insightText} color={theme.textDim}>
               {dashboard.latest_insight?.[activeInsightIndex]?.summary || 'No insights available.'}
-            </Text>
-            <TouchableOpacity style={styles.insightReadMore} activeOpacity={0.7}>
-              <Text style={styles.insightReadMoreText} color={theme.primary}>Read more →</Text>
-            </TouchableOpacity>
+            </Text>            
           </Card>
 
           {/* ── Pagination dots ───────────────────────────────────────────── */}
@@ -425,6 +487,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8
   },
+  errorStateWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+  errorCard: {
+    alignItems: 'center',
+    marginBottom: 0,
+    paddingVertical: 24,
+    paddingHorizontal: 22,
+  },
+  errorEmoji: {
+    fontSize: 36,
+    marginBottom: 10,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: Fonts.sans,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorBody: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Fonts.sans,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    minWidth: 120,
+    height: 46,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: Fonts.sans,
+  },
 
   // Header
   header: {
@@ -437,10 +542,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0.2,
+    fontFamily: Fonts.sans,
   },
   date: {
     fontSize: 13,
     marginTop: 3,
+    fontFamily: Fonts.rounded,
   },
   bellBtn: {
     width: 42,
@@ -468,10 +575,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.2,
+    fontFamily: Fonts.rounded,
   },
   pulseSubheading: {
     fontSize: 12,
     marginTop: 3,
+    fontFamily: Fonts.sans,
   },
   pulseMidRow: {
     flexDirection: 'row',
@@ -483,16 +592,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 46,
+    fontFamily: Fonts.sans,
   },
   pulseValue: {
     fontSize: 42,
     fontWeight: '800',
     lineHeight: 48,
     letterSpacing: -1,
+    fontFamily: Fonts.sans,
   },
   pulseDrivers: {
     fontSize: 12,
     marginBottom: 4,
+    fontFamily: Fonts.sans,
   },
 
   // Section label
@@ -501,6 +613,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 12,
+    fontFamily: Fonts.rounded,
   },
 
   // Indicator grid
@@ -513,8 +626,6 @@ const styles = StyleSheet.create({
 
   // Insight
   insightCard: {
-    borderColor: 'rgba(11,143,77,0.3)',
-    backgroundColor: 'rgba(11,143,77,0.06)',
     marginTop: 2,
   },
   insightTopRow: {
@@ -537,10 +648,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.1,
+    fontFamily: Fonts.rounded,
   },
   insightText: {
     fontSize: 14,
     lineHeight: 22,
+    fontFamily: Fonts.sans,
   },
   insightReadMore: {
     marginTop: 12,
@@ -549,6 +662,7 @@ const styles = StyleSheet.create({
   insightReadMoreText: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: Fonts.rounded,
   },
 
   // Pagination dots
@@ -576,13 +690,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36, 48, 68, 0.4)',
+    borderBottomColor: 'transparent',
   },
   modalRowLabel: {
     fontSize: 15,
+    fontFamily: Fonts.sans,
   },
   modalRowValue: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: Fonts.sans,
   }
 });

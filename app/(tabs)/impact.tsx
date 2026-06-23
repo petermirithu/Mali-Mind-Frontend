@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -20,6 +20,7 @@ import ImpactTile from '@/components/impact/impactTile';
 import ImpactProfileItem from '@/components/impact/impactProfileItem';
 import ImpactBreakdownChart from '@/components/impact/impactBreakDownChart';
 import { useSelector } from 'react-redux';
+import { showAppToast, useToast } from '@/components/ui/toast';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -67,6 +68,8 @@ export default function ImpactScreen() {
   const { theme } = useTheme();
   const screenStyls = useMemo(() => screenStyles(theme), [theme]);
   const modalStyls = useMemo(() => modalStyles(theme), [theme]);
+  const toast = useToast();
+  const hasShownLoadErrorToast = useRef(false);
 
   const { userProfile } = useSelector((state: any) => state.userProfile);
 
@@ -123,6 +126,26 @@ export default function ImpactScreen() {
     }, {
       onSuccess: () => {
         setIsEditModalVisible(false);
+        showAppToast(toast, {
+          action: 'success',
+          title: 'Impact profile updated',
+          description: 'Your impact profile was saved successfully.',
+          nativeIDPrefix: 'impact-save-success',
+        });
+        refetch();
+      },
+      onError: (error: any) => {
+        const rawMessage =
+          error?.response?.data?.message ??
+          error?.message ??
+          'Could not save your impact profile right now.';
+
+        showAppToast(toast, {
+          action: 'error',
+          title: 'Save failed',
+          description: typeof rawMessage === 'string' ? rawMessage : 'Please try again in a moment.',
+          nativeIDPrefix: 'impact-save-error',
+        });
       }
     });
   };
@@ -185,6 +208,22 @@ export default function ImpactScreen() {
   const savingsUtilizationPct = impactData?.savings_utilization_pct ?? 0;
   const moneyLeftTone = moneyLeftThisMonth < 0 ? theme.danger : theme.primary;
 
+  useEffect(() => {
+    if (isError && !hasShownLoadErrorToast.current) {
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Impact data unavailable',
+        description: 'Please check your connection and try again.',
+        nativeIDPrefix: 'impact-load-error',
+      });
+      hasShownLoadErrorToast.current = true;
+    }
+
+    if (!isError) {
+      hasShownLoadErrorToast.current = false;
+    }
+  }, [isError, toast]);
+
   // ─── Loading / Error states ────────────────────────────────────────
   if (isLoading) {
     return (
@@ -195,7 +234,7 @@ export default function ImpactScreen() {
             <Text style={screenStyls.headerSub}>See how the economy affects your life</Text>
           </View>
           <TouchableOpacity disabled={true} style={screenStyls.infoBtn} activeOpacity={0.7} onPress={() => refetch()}>
-            <MaterialIcons name="refresh" size={24} color="white" />
+            <MaterialIcons name="refresh" size={24} color={theme.textDim} />
           </TouchableOpacity>
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -215,7 +254,7 @@ export default function ImpactScreen() {
             <Text style={screenStyls.headerSub}>See how the economy affects your life</Text>
           </View>
           <TouchableOpacity style={screenStyls.infoBtn} activeOpacity={0.7} onPress={() => refetch()}>
-            <MaterialIcons name="refresh" size={24} color="white" />
+            <MaterialIcons name="refresh" size={24} color={theme.textDim} />
           </TouchableOpacity>
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
@@ -236,7 +275,7 @@ export default function ImpactScreen() {
           <Text style={screenStyls.headerSub}>See how the economy affects your life</Text>
         </View>
         <TouchableOpacity style={screenStyls.infoBtn} activeOpacity={0.7} onPress={() => refetch()}>
-          <MaterialIcons name="refresh" size={24} color="white" />
+          <MaterialIcons name="refresh" size={24} color={theme.textDim} />
         </TouchableOpacity>
       </View>
 
@@ -267,8 +306,8 @@ export default function ImpactScreen() {
 
             {/* ── Hero spending card ──────────────────────────────────────────── */}
             <View style={[screenStyls.heroCard, {
-              backgroundColor: heroTrend === 'down' ? 'rgba(11, 143, 77, 0.05)' : (heroTrend === 'up' ? 'rgba(235, 87, 87, 0.05)' : 'rgba(245, 166, 35, 0.05)'),
-              borderColor: heroTrend === 'down' ? 'rgba(11, 143, 77, 0.3)' : (heroTrend === 'up' ? 'rgba(235, 87, 87, 0.3)' : 'rgba(245, 166, 35, 0.3)'),
+              backgroundColor: heroTrend === 'down' ? theme.pulsePositiveSurface : (heroTrend === 'up' ? theme.pulseNegativeSurface : theme.pulseNeutralSurface),
+              borderColor: heroTrend === 'down' ? theme.pulsePositiveBorder : (heroTrend === 'up' ? theme.pulseNegativeBorder : theme.pulseNeutralBorder),
               borderWidth: 1.5,
             }]}>
               <HeroChart color={heroBadgeTextColor} currentSpending={impactData.current_month_spending} pastSpending={impactData.past_6_months_spending || []} startFillColor={startFillColor} endFillColor={endFillColor} />
@@ -575,7 +614,8 @@ const screenStyles = (theme: any) => StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
+    backgroundColor: theme.glassSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
@@ -587,10 +627,10 @@ const screenStyles = (theme: any) => StyleSheet.create({
 
   // Empty card
   emptyStateCard: {
-    backgroundColor: theme.card,
+    backgroundColor: theme.glassSurface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
     paddingHorizontal: 18,
     paddingVertical: 22,
     alignItems: 'center',
@@ -622,16 +662,17 @@ const screenStyles = (theme: any) => StyleSheet.create({
     paddingVertical: 12,
   },
   emptyStateButtonText: {
-    color: '#fff',
+    color: theme.onPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
 
   // Hero card
   heroCard: {
-    backgroundColor: theme.card,
+    backgroundColor: theme.glassSurface,
     borderRadius: 20,
     borderWidth: 1,
+    borderColor: theme.glassBorder,
 
     padding: 18,
     marginBottom: 18,
@@ -722,10 +763,10 @@ const screenStyles = (theme: any) => StyleSheet.create({
 
   // Profile card
   profileCard: {
-    backgroundColor: theme.card,
+    backgroundColor: theme.glassSurface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
     marginBottom: 22,
     overflow: 'hidden',
   },
@@ -739,10 +780,10 @@ const screenStyles = (theme: any) => StyleSheet.create({
 
   // Mali Insight
   insightCard: {
-    backgroundColor: theme.card,
+    backgroundColor: theme.glassSurface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -754,9 +795,9 @@ const screenStyles = (theme: any) => StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#1A2535',
+    backgroundColor: theme.subtleSurface,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.subtleBorder,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -800,10 +841,10 @@ const screenStyles = (theme: any) => StyleSheet.create({
   },
   bottomCard: {
     flex: 1,
-    backgroundColor: theme.card,
+    backgroundColor: theme.glassSurface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
     padding: 14,
   },
   bottomCardTitle: {
@@ -820,7 +861,7 @@ const screenStyles = (theme: any) => StyleSheet.create({
 
   // Expect card
   expectCard: {
-    borderColor: 'rgba(232,69,69,0.2)',
+    borderColor: theme.pulseNegativeBorder,
   },
   expectChart: {
     marginBottom: 10,
@@ -828,7 +869,7 @@ const screenStyles = (theme: any) => StyleSheet.create({
     overflow: 'hidden',
   },
   expectChartInner: {
-    backgroundColor: 'rgba(232,69,69,0.06)',
+    backgroundColor: theme.pulseNegativeSurface,
     borderRadius: 8,
     padding: 4,
   },
@@ -889,10 +930,10 @@ const screenStyles = (theme: any) => StyleSheet.create({
 
   // Compare card
   compareCard: {
-    backgroundColor: theme.card,
+    backgroundColor: theme.glassSurface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
     padding: 16,
     marginBottom: 8,
   },
@@ -916,7 +957,7 @@ const screenStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.dangerDim,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(232,69,69,0.3)',
+    borderColor: theme.pulseNegativeBorder,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -946,7 +987,7 @@ const screenStyles = (theme: any) => StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: theme.onPrimary,
     backgroundColor: theme.danger,
     shadowColor: theme.danger,
     shadowOffset: { width: 0, height: 0 },
@@ -974,16 +1015,16 @@ const screenStyles = (theme: any) => StyleSheet.create({
 const modalStyles = (theme: any) => StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: theme.modalBackdrop,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: theme.background,
+    backgroundColor: theme.glassSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     height: '85%',
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.glassBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1012,9 +1053,9 @@ const modalStyles = (theme: any) => StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    backgroundColor: theme.card,
+    backgroundColor: theme.inputSurface,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -1051,8 +1092,8 @@ const modalStyles = (theme: any) => StyleSheet.create({
   modalFooter: {
     padding: 20,
     borderTopWidth: 1,
-    borderColor: theme.cardBorder,
-    backgroundColor: theme.background,
+    borderColor: theme.divider,
+    backgroundColor: theme.glassSurface,
   },
   saveBtn: {
     backgroundColor: theme.primary,
@@ -1062,14 +1103,14 @@ const modalStyles = (theme: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   saveBtnText: {
-    color: '#fff',
+    color: theme.onPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   dropdownMenu: {
-    backgroundColor: theme.surface,
+    backgroundColor: theme.subtleSurface,
     borderWidth: 1,
-    borderColor: theme.cardBorder,
+    borderColor: theme.subtleBorder,
     borderRadius: 12,
     marginTop: -8,
     marginBottom: 16,
@@ -1079,7 +1120,7 @@ const modalStyles = (theme: any) => StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.cardBorder,
+    borderBottomColor: theme.divider,
   },
   dropdownItemText: {
     color: theme.text,
