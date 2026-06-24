@@ -5,7 +5,7 @@ import { Text, View } from "@gluestack-ui/themed";
 import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 
-export default function FeedCard({ item, cfg, toTitleLabel }: { item: FeedItemUi, cfg: any , toTitleLabel: Function}) {
+export default function FeedCard({ item, cfg, toTitleLabel, onOpenSource }: { item: FeedItemUi, cfg: any, toTitleLabel: Function, onOpenSource: Function }) {
     const [expanded, setExpanded] = useState(false);
     const { theme } = useTheme();
     const fc = useMemo(() => createFeedCardStyles(theme), [theme]);
@@ -105,8 +105,18 @@ export default function FeedCard({ item, cfg, toTitleLabel }: { item: FeedItemUi
                 </View>
             )}
 
-            {item.sourceUrl ? (
-                <Text style={[fc.sourceText, { color: theme.textDim }]}>Source: {item.sourceUrl}</Text>
+            {item.sourceUrl ? (                
+                <TouchableOpacity
+                    style={{
+                        position:"absolute",
+                        right: 10,
+                        bottom: 13,
+                    }}
+                    onPress={() => onOpenSource?.(item.sourceUrl)} disabled={!item.sourceUrl}>
+                    <Text style={[fc.sourceText, { color: theme.primary }]}>
+                        {item.sourceUrl ? 'Open source' : 'No source'}
+                    </Text>
+                </TouchableOpacity>
             ) : null}
 
             <TouchableOpacity style={fc.expandBtn} onPress={handleExpand} activeOpacity={0.72}>

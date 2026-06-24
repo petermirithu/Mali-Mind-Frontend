@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     position: 'absolute',
     right: 0,
-    bottom: 0,
+    bottom: 20,
     opacity: 0.8, // Slight opacity to blend with background if text overlaps
   },
   gridLineH: {

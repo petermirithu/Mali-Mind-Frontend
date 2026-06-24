@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Linking,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -13,6 +13,7 @@ import { useTheme } from '@/contexts/theme-context';
 import { Fonts } from '@/constants/fonts';
 import FeedCard from '@/components/feed/feedCard';
 import { showAppToast, useToast } from '@/components/ui/toast';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type BackendCategory =
   | 'fuel'
@@ -140,6 +141,21 @@ export default function FeedScreen() {
     await refetch();
   }, [refetch]);
 
+  const openSource = useCallback(async (url?: string) => {
+    if (!url) return;
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      showAppToast(toast, {
+        action: 'error',
+        title: 'Invalid link',
+        description: 'Could not open this source link.',
+        nativeIDPrefix: 'feed-link-error',
+      });
+    }
+  }, [toast]);
+
   useEffect(() => {
     if (isError && !hasShownErrorToast.current) {
       showAppToast(toast, {
@@ -171,7 +187,7 @@ export default function FeedScreen() {
           <Text style={[sc.headerDate, { color: theme.textDim }]}>{now}</Text>
         </View>
 
-        <View style={[sc.livePill, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}> 
+        <View style={[sc.livePill, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}>
           <View style={[sc.liveDot, { backgroundColor: theme.success }]} />
           <Text style={[sc.liveText, { color: theme.success }]}>Live</Text>
         </View>
@@ -256,8 +272,16 @@ export default function FeedScreen() {
             <Text style={[sc.stateText, { color: theme.textDim }]}>No updates in this category yet.</Text>
           </View>
         ) : null}
-
-        {!isLoading && !isError && filtered.map((item) => <FeedCard key={item.id} item={item} cfg={CATEGORY_CONFIG[item.category] ?? DEFAULT_CATEGORY_STYLE} toTitleLabel={toTitleLabel} />)}
+        
+        {!isLoading && !isError && filtered.map((item) => (
+          <FeedCard
+            key={item.id}
+            item={item}
+            cfg={CATEGORY_CONFIG[item.category] ?? DEFAULT_CATEGORY_STYLE}
+            toTitleLabel={toTitleLabel}
+            onOpenSource={openSource}
+          />
+        ))}
 
         {!isLoading && !isError && filtered.length > 0 ? (
           <Text style={[sc.footer, { color: theme.textDim }]}>You are up to date</Text>

@@ -21,6 +21,7 @@ import ImpactProfileItem from '@/components/impact/impactProfileItem';
 import ImpactBreakdownChart from '@/components/impact/impactBreakDownChart';
 import { useSelector } from 'react-redux';
 import { showAppToast, useToast } from '@/components/ui/toast';
+import ButtonRound from '@/components/auth/buttonRound';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -406,7 +407,7 @@ export default function ImpactScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-                        
+
             {/* ── Bottom two panels ────────────────────────────────────────────── */}
             <View style={screenStyls.bottomRow}>
               <View style={[screenStyls.bottomCard, screenStyls.expectCard]}>
@@ -564,9 +565,14 @@ export default function ImpactScreen() {
             </ScrollView>
 
             <View style={modalStyls.modalFooter}>
-              <TouchableOpacity style={modalStyls.saveBtn} onPress={handleSave} disabled={saveImpact.isPending}>
-                <Text style={modalStyls.saveBtnText}>{saveImpact.isPending ? 'Saving...' : 'Save Changes'}</Text>
-              </TouchableOpacity>
+              <ButtonRound
+                theme={theme}
+                onPress={handleSave}
+                canSubmit={true}
+                isSubmitting={saveImpact.isPending}
+                title='Save Change'
+                loadingText='Saving Changes ...'
+              />              
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -735,7 +741,7 @@ const screenStyles = (theme: any) => StyleSheet.create({
     fontWeight: '700',
     color: theme.text,
   },
-  
+
   // Section headers
   sectionHeader: {
     flexDirection: 'row',
@@ -1094,19 +1100,7 @@ const modalStyles = (theme: any) => StyleSheet.create({
     borderTopWidth: 1,
     borderColor: theme.divider,
     backgroundColor: theme.glassSurface,
-  },
-  saveBtn: {
-    backgroundColor: theme.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: theme.onPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  },  
   dropdownMenu: {
     backgroundColor: theme.subtleSurface,
     borderWidth: 1,

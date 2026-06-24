@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,7 +12,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/fonts';
@@ -22,8 +23,6 @@ import { Image, Text, View } from '@gluestack-ui/themed';
 import Bubble from '@/components/mali-chat/bubble';
 import { useSelector } from 'react-redux';
 
-
-type Role = 'user' | 'assistant';
 
 const QUICK_REPLIES = [
   'Why are food prices rising this week?',
@@ -36,15 +35,20 @@ const QUICK_REPLIES = [
 export default function AskMaliScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  
+  const insets = useSafeAreaInsets();
+  const androidBottomInset = Platform.OS === 'android' ? insets.bottom : 0;
+
   const { userProfile } = useSelector((state: any) => state.userProfile);
-  
+
   const [assets] = useAssets([
     require('../assets/animations/typing.gif'),
   ]);
 
   const [query, setQuery] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [hasKeyboardOpenedOnce, setHasKeyboardOpenedOnce] = useState(false);
+
   const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
@@ -57,19 +61,6 @@ export default function AskMaliScreen() {
   const scrollToBottom = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
   }, []);
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 320, useNativeDriver: true }),
-      Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
-
-  useEffect(() => {
-    if (messages.length > 0 || isTyping) {
-      scrollToBottom();
-    }
-  }, [isTyping, messages, scrollToBottom]);
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -110,6 +101,41 @@ export default function AskMaliScreen() {
       </View>
     );
   }
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 320, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
+  useEffect(() => {
+    if (messages.length > 0 || isTyping) {
+      scrollToBottom();
+    }
+  }, [isTyping, messages, scrollToBottom]);
+
+  useEffect(() => {
+    const showEvent: 'keyboardWillShow' | 'keyboardDidShow' =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+
+    const hideEvent: 'keyboardWillHide' | 'keyboardDidHide' =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setIsKeyboardVisible(true);
+      setHasKeyboardOpenedOnce(true);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   if (!assets) {
     return (
@@ -232,7 +258,7 @@ export default function AskMaliScreen() {
                 )}
 
                 {error && (
-                  <View style={[styles.errorBubble, { backgroundColor: theme.toastErrorSurface, borderColor: theme.danger }]}> 
+                  <View style={[styles.errorBubble, { backgroundColor: theme.toastErrorSurface, borderColor: theme.danger }]}>
                     <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
                   </View>
                 )}
@@ -255,8 +281,18 @@ export default function AskMaliScreen() {
             )}
           </ScrollView>
 
-          <View style={[styles.inputWrap, { backgroundColor: theme.background, borderTopColor: theme.cardBorder }]}>
-            <View style={[styles.composerRow, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}> 
+          <View style={[styles.inputWrap, {
+            backgroundColor: theme.background,
+            borderTopColor: theme.cardBorder,
+            paddingBottom: Platform.OS === 'ios'
+              ? (isKeyboardVisible ? 0 : 22)
+              : isKeyboardVisible
+                ? 0
+                : hasKeyboardOpenedOnce
+                  ? 14
+                  : Math.max(14, androidBottomInset + 8),
+          }]}>
+            <View style={[styles.composerRow, { backgroundColor: theme.glassSurface, borderColor: theme.glassBorder }]}>
               <Pressable
                 style={[styles.newChatBtn, { backgroundColor: theme.subtleSurface, borderColor: theme.subtleBorder }]}
                 onPress={startNewChat}
@@ -295,8 +331,8 @@ export default function AskMaliScreen() {
           </View>
 
           <Modal visible={showResetModal} transparent animationType="fade" onRequestClose={() => setShowResetModal(false)}>
-            <View style={[styles.modalOverlay, { backgroundColor: theme.modalBackdrop }]}> 
-              <View style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.glassBorder, shadowColor: theme.shadow }]}> 
+            <View style={[styles.modalOverlay, { backgroundColor: theme.modalBackdrop }]}>
+              <View style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.glassBorder, shadowColor: theme.shadow }]}>
                 <Text style={[styles.modalTitle, { color: theme.text }]}>Start new chat?</Text>
                 <Text style={[styles.modalBody, { color: theme.textDim }]}>This clears your current conversation and starts a fresh thread with Mali.</Text>
                 <View style={styles.modalActions}>
@@ -472,7 +508,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.1,
   },
-  
+
   typingBubble: {
     alignSelf: 'flex-start',
     borderWidth: 1,
@@ -528,7 +564,6 @@ const styles = StyleSheet.create({
   inputWrap: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 22 : 14,
     borderTopWidth: 1,
   },
   composerRow: {

@@ -108,7 +108,7 @@ export default function Profile() {
     }
 
     setIsChangingPassword(true);
-    try {      
+    try {
       await updateUserPassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
@@ -120,10 +120,10 @@ export default function Profile() {
         description: 'Your password was changed successfully.',
         duration: 3200,
       });
-    } 
+    }
     catch (error: any) {
       console.log(error)
-      
+
       const rawMessage =
         error?.response?.data?.message ??
         error?.message ??
@@ -218,7 +218,7 @@ export default function Profile() {
           <Text style={[styles.cardText, { color: theme.textDim, marginBottom: 14 }]}>Theme switch customization is coming soon.</Text>
           <View style={[styles.themeRow, styles.mutedThemeRow, { borderColor: theme.cardBorder, backgroundColor: theme.surface }]}>
             <View>
-              <Text style={[styles.themeLabel, { color: theme.text }]}>{mode === 'dark' ? 'Dark Mode' : 'Light Mode'}</Text>
+              <Text style={[styles.themeLabel, { color: theme.text }]}>{mode === 'dark' ? 'Light Mode' : 'Dark Mode'}</Text>
               <Text style={[styles.themeHint, { color: theme.textDim }]}>Coming soon</Text>
             </View>
             <View style={[styles.comingSoonPill, { backgroundColor: theme.primaryDim }]}>
@@ -311,91 +311,101 @@ export default function Profile() {
               </>
             ) : (
               <>
-                <Text style={[styles.inputLabel, { color: theme.textDim }]}>Current Password</Text>
-                <View style={styles.passwordInputWrap}>
-                  <TextInput
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    secureTextEntry={!showCurrentPassword}
-                    style={[
-                      styles.input,
-                      styles.inputWithIcon,
-                      { color: theme.text, borderColor: theme.cardBorder, backgroundColor: theme.surface },
-                    ]}
-                    placeholder="Enter current password"
-                    placeholderTextColor={theme.textDim}
-                  />
-                  <Pressable
-                    style={styles.eyeButton}
-                    onPress={() => setShowCurrentPassword((prev) => !prev)}
-                    hitSlop={8}
-                  >
-                    <Text style={[styles.eyeIcon, { color: theme.textDim }]}>{showCurrentPassword ? '🙈' : '👁️'}</Text>
-                  </Pressable>
-                </View>
+                {isGoogleAccount ? (
+                  <View style={[styles.infoPanel, { backgroundColor: theme.surface, borderColor: theme.cardBorder }]}>
+                    <Text style={styles.infoPanelIcon}>🔒</Text>
+                    <Text style={[styles.cardText, { color: theme.textDim, flex: 1 }]}>
+                      You are logged in with Google. Profile details are managed by Google and cannot be edited here.
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={[styles.inputLabel, { color: theme.textDim }]}>Current Password</Text>
+                    <View style={styles.passwordInputWrap}>
+                      <TextInput
+                        value={currentPassword}
+                        onChangeText={setCurrentPassword}
+                        secureTextEntry={!showCurrentPassword}
+                        style={[
+                          styles.input,
+                          styles.inputWithIcon,
+                          { color: theme.text, borderColor: theme.cardBorder, backgroundColor: theme.surface },
+                        ]}
+                        placeholder="Enter current password"
+                        placeholderTextColor={theme.textDim}
+                      />
+                      <Pressable
+                        style={styles.eyeButton}
+                        onPress={() => setShowCurrentPassword((prev) => !prev)}
+                        hitSlop={8}
+                      >
+                        <Text style={[styles.eyeIcon, { color: theme.textDim }]}>{showCurrentPassword ? '🙈' : '👁️'}</Text>
+                      </Pressable>
+                    </View>
 
-                <Text style={[styles.inputLabel, { color: theme.textDim }]}>New Password</Text>
-                <View style={styles.passwordInputWrap}>
-                  <TextInput
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    secureTextEntry={!showNewPassword}
-                    style={[
-                      styles.input,
-                      styles.inputWithIcon,
-                      { color: theme.text, borderColor: theme.cardBorder, backgroundColor: theme.surface },
-                    ]}
-                    placeholder="Enter new password"
-                    placeholderTextColor={theme.textDim}
-                  />
-                  <Pressable
-                    style={styles.eyeButton}
-                    onPress={() => setShowNewPassword((prev) => !prev)}
-                    hitSlop={8}
-                  >
-                    <Text style={[styles.eyeIcon, { color: theme.textDim }]}>{showNewPassword ? '🙈' : '👁️'}</Text>
-                  </Pressable>
-                </View>
+                    <Text style={[styles.inputLabel, { color: theme.textDim }]}>New Password</Text>
+                    <View style={styles.passwordInputWrap}>
+                      <TextInput
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        secureTextEntry={!showNewPassword}
+                        style={[
+                          styles.input,
+                          styles.inputWithIcon,
+                          { color: theme.text, borderColor: theme.cardBorder, backgroundColor: theme.surface },
+                        ]}
+                        placeholder="Enter new password"
+                        placeholderTextColor={theme.textDim}
+                      />
+                      <Pressable
+                        style={styles.eyeButton}
+                        onPress={() => setShowNewPassword((prev) => !prev)}
+                        hitSlop={8}
+                      >
+                        <Text style={[styles.eyeIcon, { color: theme.textDim }]}>{showNewPassword ? '🙈' : '👁️'}</Text>
+                      </Pressable>
+                    </View>
 
-                <Text style={[styles.inputLabel, { color: theme.textDim }]}>Confirm New Password</Text>
-                <View style={styles.passwordInputWrap}>
-                  <TextInput
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showConfirmPassword}
-                    style={[
-                      styles.input,
-                      styles.inputWithIcon,
-                      { color: theme.text, borderColor: theme.cardBorder, backgroundColor: theme.surface },
-                    ]}
-                    placeholder="Confirm new password"
-                    placeholderTextColor={theme.textDim}
-                  />
-                  <Pressable
-                    style={styles.eyeButton}
-                    onPress={() => setShowConfirmPassword((prev) => !prev)}
-                    hitSlop={8}
-                  >
-                    <Text style={[styles.eyeIcon, { color: theme.textDim }]}>{showConfirmPassword ? '🙈' : '👁️'}</Text>
-                  </Pressable>
-                </View>
+                    <Text style={[styles.inputLabel, { color: theme.textDim }]}>Confirm New Password</Text>
+                    <View style={styles.passwordInputWrap}>
+                      <TextInput
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry={!showConfirmPassword}
+                        style={[
+                          styles.input,
+                          styles.inputWithIcon,
+                          { color: theme.text, borderColor: theme.cardBorder, backgroundColor: theme.surface },
+                        ]}
+                        placeholder="Confirm new password"
+                        placeholderTextColor={theme.textDim}
+                      />
+                      <Pressable
+                        style={styles.eyeButton}
+                        onPress={() => setShowConfirmPassword((prev) => !prev)}
+                        hitSlop={8}
+                      >
+                        <Text style={[styles.eyeIcon, { color: theme.textDim }]}>{showConfirmPassword ? '🙈' : '👁️'}</Text>
+                      </Pressable>
+                    </View>
 
-                <Pressable
-                  style={[
-                    styles.actionButton,
-                    {
-                      backgroundColor: !hasPasswordInput || isChangingPassword ? theme.disabledSurface : theme.primary,
-                      opacity: !hasPasswordInput || isChangingPassword ? 0.85 : 1,
-                    },
-                  ]}
-                  onPress={onChangePassword}
-                  disabled={!hasPasswordInput || isChangingPassword}
-                >
-                  <Text fontWeight="700" style={[styles.toggleText, { color: theme.onPrimary }]}>
-                    {isChangingPassword ? 'Updating...' : 'Change Password'}
-                  </Text>
-                </Pressable>
-
+                    <Pressable
+                      style={[
+                        styles.actionButton,
+                        {
+                          backgroundColor: !hasPasswordInput || isChangingPassword ? theme.disabledSurface : theme.primary,
+                          opacity: !hasPasswordInput || isChangingPassword ? 0.85 : 1,
+                        },
+                      ]}
+                      onPress={onChangePassword}
+                      disabled={!hasPasswordInput || isChangingPassword}
+                    >
+                      <Text fontWeight="700" style={[styles.toggleText, { color: theme.onPrimary }]}>
+                        {isChangingPassword ? 'Updating...' : 'Change Password'}
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
               </>
             )}
           </Animated.View>
