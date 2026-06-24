@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toast';
 import MaliLogo from '@/components/auth/maliLogo';
 import FormInput from '@/components/auth/formInput';
+import ButtonRound from '@/components/auth/buttonRound';
 
 export default function ResetPassword() {
     const { theme } = useTheme();
@@ -206,15 +207,16 @@ export default function ResetPassword() {
                                 <Text style={sc.errorText}>Passwords do not match.</Text>
                             ) : null}
 
-                            <Pressable
-                                onPress={onResetPassword}
-                                style={[sc.primaryBtn, (!canSubmit || resetPassword.isPending) && sc.primaryBtnDisabled]}
-                                disabled={!canSubmit || resetPassword.isPending}
-                            >
-                                <Text style={sc.primaryBtnText}>
-                                    {resetPassword.isPending ? 'Resetting...' : 'Reset Password'}
-                                </Text>
-                            </Pressable>
+                            <View marginTop={15}>
+                                <ButtonRound
+                                    theme={theme}
+                                    onPress={onResetPassword}
+                                    canSubmit={canSubmit}
+                                    isSubmitting={resetPassword.isPending}
+                                    title='Submit'
+                                    loadingText='Submitting ...'
+                                />
+                            </View>
 
                             <View style={sc.dividerRow}>
                                 <View style={sc.dividerLine} />
@@ -304,32 +306,6 @@ const makeStyles = (theme: ThemeColors) =>
             fontFamily: Fonts.sans,
             fontSize: 12,
             lineHeight: 16,
-        },
-
-        primaryBtn: {
-            marginTop: 4,
-            height: 50,
-            borderRadius: 999,
-            backgroundColor: theme.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: theme.primary,
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.45,
-            shadowRadius: 14,
-            elevation: 8,
-        },
-        primaryBtnDisabled: {
-            backgroundColor: theme.disabledSurface,
-            shadowOpacity: 0.12,
-            elevation: 2,
-        },
-        primaryBtnText: {
-            fontFamily: Fonts.sans,
-            color: theme.onPrimary,
-            fontSize: 16,
-            fontWeight: '800',
-            letterSpacing: 0.2,
         },
 
         backBtn: {

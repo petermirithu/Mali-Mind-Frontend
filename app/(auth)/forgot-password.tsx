@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toast';
 import MaliLogo from '@/components/auth/maliLogo';
 import FormInput from '@/components/auth/formInput';
+import ButtonRound from '@/components/auth/buttonRound';
 
 
 export default function ForgotPassword() {
@@ -108,7 +109,7 @@ export default function ForgotPassword() {
                                 title='Forgot password'
                                 subTitle='Enter your account email and we&apos;ll send a reset code.'
                             />
-                            
+
                             <FormInput
                                 label="Email Address"
                                 placeholder="Enter email address"
@@ -128,15 +129,16 @@ export default function ForgotPassword() {
                                 </View>
                             ) : null}
 
-                            <Pressable
-                                onPress={onSubmit}
-                                style={[sc.primaryBtn, (!canSubmit || forgotPassword.isPending) && sc.primaryBtnDisabled]}
-                                disabled={!canSubmit || forgotPassword.isPending}
-                            >
-                                <Text style={sc.primaryBtnText}>
-                                    {forgotPassword.isPending ? 'Sending...' : 'Submit'}
-                                </Text>
-                            </Pressable>
+                            <View marginTop={20}>
+                                <ButtonRound
+                                    theme={theme}
+                                    onPress={onSubmit}
+                                    canSubmit={canSubmit}
+                                    isSubmitting={forgotPassword.isPending}
+                                    title='Submit'
+                                    loadingText='Submitting ...'
+                                />
+                            </View>
 
                             <View style={sc.dividerRow}>
                                 <View style={sc.dividerLine} />
@@ -198,7 +200,7 @@ const makeStyles = (theme: ThemeColors) =>
             shadowRadius: 20,
             elevation: 12,
         },
-        
+
         successWrap: {
             flexDirection: 'row',
             alignItems: 'center',
@@ -217,31 +219,6 @@ const makeStyles = (theme: ThemeColors) =>
             fontFamily: Fonts.sans,
             fontSize: 12,
             lineHeight: 16,
-        },
-
-        primaryBtn: {
-            height: 50,
-            borderRadius: 999,
-            backgroundColor: theme.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: theme.primary,
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.45,
-            shadowRadius: 14,
-            elevation: 8,
-        },
-        primaryBtnDisabled: {
-            backgroundColor: theme.disabledSurface,
-            shadowOpacity: 0.12,
-            elevation: 2,
-        },
-        primaryBtnText: {
-            fontFamily: Fonts.sans,
-            color: theme.onPrimary,
-            fontSize: 16,
-            fontWeight: '800',
-            letterSpacing: 0.2,
         },
 
         backBtn: {

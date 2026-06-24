@@ -23,6 +23,7 @@ import * as WebBrowser from 'expo-web-browser';
 import SocialButton from '@/components/auth/socialButton';
 import MaliLogo from '@/components/auth/maliLogo';
 import FormInput from '@/components/auth/formInput';
+import ButtonRound from '@/components/auth/buttonRound';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -38,21 +39,21 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
-  
+
   const { getMe, socialAuth } = useAuth();
   const { mutateAsync: emailFetchProfile } = getMe;
   const { mutateAsync: socialFetchProfile } = socialAuth;
 
   const canSubmit = email.trim().includes('@') && password.trim().length >= 8;
 
-  const onSignIn = async () => {    
+  const onSignIn = async () => {
     if (!canSubmit || isSigningIn) return;
 
     setIsSigningIn(true);
     try {
       const token = await loginWithEmail(email.trim(), password);
       await emailFetchProfile({ token: token, email: email });
-      setIsSigningIn(false);      
+      setIsSigningIn(false);
       router.replace('/(tabs)');
     }
     catch (error: any) {
@@ -61,7 +62,7 @@ export default function SignIn() {
         error?.response?.data?.message ??
         'Unable to sign in. Please try again.';
       const message = typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage);
-      
+
       showAppToast(toast, {
         action: resolveToastAction('error'),
         title: 'Sign in failed',
@@ -79,15 +80,15 @@ export default function SignIn() {
 
     setIsGoogleSigningIn(true);
     try {
-      const result = await loginWithGoogleNative();            
-      await socialFetchProfile(result);      
+      const result = await loginWithGoogleNative();
+      await socialFetchProfile(result);
       router.replace('/(tabs)');
-    } 
+    }
     catch (error: any) {
       console.log("Sign error...")
       console.log(error)
 
-      
+
       const rawMessage =
         error?.message ??
         error?.response?.data?.message ??
@@ -100,7 +101,7 @@ export default function SignIn() {
         description: message,
         duration: 3500,
       });
-    } 
+    }
     finally {
       setIsGoogleSigningIn(false);
     }
@@ -142,11 +143,11 @@ export default function SignIn() {
             showsVerticalScrollIndicator={false}
           >
             <View style={sc.card}>
-              <MaliLogo 
-                theme={theme} 
+              <MaliLogo
+                theme={theme}
                 title='Welcome back'
                 subTitle='Sign in to continue to your account.'
-                />
+              />
 
               <FormInput
                 label="Email Address"
@@ -171,14 +172,15 @@ export default function SignIn() {
               <Pressable onPress={onForgotPassword} style={sc.forgotWrap} hitSlop={8}>
                 <Text style={sc.forgotText}>Forgot Password?</Text>
               </Pressable>
-
-              <Pressable
+              
+              <ButtonRound
+                theme={theme}
                 onPress={onSignIn}
-                style={[sc.signInBtn, (!canSubmit || isSigningIn) && sc.signInBtnDisabled]}
-                disabled={!canSubmit || isSigningIn}
-              >
-                <Text style={sc.signInText}>{isSigningIn ? 'Signing In...' : 'Sign In'}</Text>
-              </Pressable>
+                canSubmit={canSubmit}
+                isSubmitting={isSigningIn}
+                title='Sign In'
+                loadingText='Signing In ...'
+              />
 
               <View style={sc.dividerRow}>
                 <View style={sc.dividerLine} />
@@ -240,7 +242,7 @@ const makeStyles = (theme: ThemeColors) =>
 
     card: {
       borderRadius: 28,
-      borderWidth: 1,      
+      borderWidth: 1,
       borderColor: theme.cardTBorder,
       backgroundColor: theme.cardT,
       paddingHorizontal: 18,
@@ -251,7 +253,7 @@ const makeStyles = (theme: ThemeColors) =>
       shadowRadius: 20,
       elevation: 12,
     },
-        
+
     forgotWrap: {
       alignSelf: 'flex-end',
       marginTop: 2,
@@ -263,32 +265,7 @@ const makeStyles = (theme: ThemeColors) =>
       color: theme.primary,
       fontWeight: '600',
     },
-
-    signInBtn: {
-      height: 50,
-      borderRadius: 999,
-      backgroundColor: theme.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.45,
-      shadowRadius: 14,
-      elevation: 8,
-    },
-    signInBtnDisabled: {
-      backgroundColor: theme.disabledSurface,
-      shadowOpacity: 0.12,
-      elevation: 2,
-    },
-    signInText: {
-      fontFamily: Fonts.sans,
-      color: theme.onPrimary,
-      fontSize: 16,
-      fontWeight: '800',
-      letterSpacing: 0.2,
-    },
-
+    
     dividerRow: {
       marginTop: 14,
       marginBottom: 14,
@@ -310,7 +287,7 @@ const makeStyles = (theme: ThemeColors) =>
     socialRow: {
       flexDirection: 'row',
       gap: 10,
-    },    
+    },
 
     footerRow: {
       flexDirection: 'row',

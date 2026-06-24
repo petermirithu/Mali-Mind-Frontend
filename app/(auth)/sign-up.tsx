@@ -22,6 +22,7 @@ import { resolveToastAction, showAppToast, useToast } from '@/components/ui/toas
 import SocialButton from '@/components/auth/socialButton';
 import MaliLogo from '@/components/auth/maliLogo';
 import FormInput from '@/components/auth/formInput';
+import ButtonRound from '@/components/auth/buttonRound';
 
 type FieldState = {
   fullName: string;
@@ -57,7 +58,7 @@ export default function SignUp() {
   const updateField = (key: keyof FieldState, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const onCreateAccount = async () => {
+  const onCreateAccount = async () => {    
     if (!canSubmit) return;
 
     setIsSubmitting(true);
@@ -108,7 +109,7 @@ export default function SignUp() {
       await socialFetchProfile(result);
       router.replace('/(tabs)');
     }
-    catch (error: any) {      
+    catch (error: any) {
       const rawMessage =
         error?.message ??
         error?.response?.data?.message ??
@@ -155,11 +156,11 @@ export default function SignUp() {
             showsVerticalScrollIndicator={false}
           >
             <View style={sc.card}>
-              <MaliLogo 
-                theme={theme} 
+              <MaliLogo
+                theme={theme}
                 title='Create your account'
                 subTitle='Join Mali and take control of your financial future.'
-                />
+              />
 
               <FormInput
                 label="Full Name"
@@ -198,17 +199,14 @@ export default function SignUp() {
                 </Text>
               </Pressable>
 
-              <Pressable
-                style={[sc.signUpBtn, (!canSubmit || isSubmitting) && sc.signUpBtnDisabled]}
+              <ButtonRound
+                theme={theme}
                 onPress={onCreateAccount}
-                disabled={!canSubmit || isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color={theme.onPrimary} />
-                ) : (
-                  <Text style={sc.signUpText}>Create Account</Text>
-                )}
-              </Pressable>
+                canSubmit={canSubmit}
+                isSubmitting={isSubmitting}
+                title='Sign Up'
+                loadingText='Signing Up ...'
+              />
 
               <View style={sc.dividerRow}>
                 <View style={sc.dividerLine} />
@@ -218,7 +216,7 @@ export default function SignUp() {
 
               <View style={sc.socialRow}>
                 <SocialButton
-                  label={isGoogleSigningIn ? 'Signing in...' : 'Google'}
+                  label={isGoogleSigningIn ? 'Signing In...' : 'Google'}
                   icon="logo-google"
                   onPress={onGoogleSignIn}
                   disabled={isGoogleSigningIn}
@@ -274,7 +272,7 @@ const makeStyles = (theme: ThemeColors) =>
       borderRadius: 28,
       borderWidth: 1,
       borderColor: theme.cardTBorder,
-      backgroundColor: theme.cardT,      
+      backgroundColor: theme.cardT,
       paddingHorizontal: 18,
       paddingVertical: 20,
       shadowColor: theme.shadow,
@@ -283,7 +281,7 @@ const makeStyles = (theme: ThemeColors) =>
       shadowRadius: 20,
       elevation: 12,
     },
-        
+
 
     termsRow: {
       marginTop: 6,
@@ -317,32 +315,6 @@ const makeStyles = (theme: ThemeColors) =>
     linkText: {
       color: theme.primary,
       fontWeight: '700',
-    },
-
-    signUpBtn: {
-      height: 50,
-      borderRadius: 999,
-      backgroundColor: theme.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: theme.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.45,
-      shadowRadius: 14,
-      elevation: 8,
-      marginBottom: 14,
-    },
-    signUpBtnDisabled: {
-      backgroundColor: theme.disabledSurface,
-      shadowOpacity: 0.12,
-      elevation: 2,
-    },
-    signUpText: {
-      fontFamily: Fonts.sans,
-      color: theme.onPrimary,
-      fontSize: 16,
-      fontWeight: '800',
-      letterSpacing: 0.2,
     },
 
     dividerRow: {
