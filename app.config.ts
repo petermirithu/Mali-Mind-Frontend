@@ -34,14 +34,14 @@ const config: ExpoConfig = {
   owner: 'pyra',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/app-icons/icon.png',
+  icon: './assets/app-icons/icon.png',  
   scheme: 'mali',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
   splash: {
     image: './assets/app-icons/splash.png',
     resizeMode: 'cover',
-    backgroundColor: '#0000',
+    backgroundColor: '#000000',
   },
   runtimeVersion: {
     policy: 'sdkVersion',

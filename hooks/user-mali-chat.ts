@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { baseUrl } from '@/services/api';
 
 export type Role = 'user' | 'assistant';
 
@@ -101,7 +102,7 @@ function sanitizeSuggestions(raw: unknown): string[] {
 export function useMaliChat(options: UseMaliChatOptions): UseMaliChatResult {
   const { userId, setQuery } = options;
 
-  const wsBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const wsBaseUrl = baseUrl;
   const wsPath = '/mali/chat/ws';
 
   if (!wsBaseUrl) {

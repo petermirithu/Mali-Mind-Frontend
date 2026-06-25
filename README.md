@@ -1,52 +1,206 @@
-# Mali-Mind-Frontend
-An AI-powered Kenyan financial intelligence app that tracks real-world economic events (fuel, food, forex, taxes, electricity, etc.) and translates them into: “What this means for your daily cost of living and business.” It connects news + prices + macro data + AI reasoning to explain impact in simple terms.
+# Mali Frontend
 
+Mali is a mobile-first financial intelligence app focused on Kenya. It tracks real-world economic signals such as fuel prices, food inflation, forex movement, taxes, and electricity costs, then translates them into practical insights people can understand and act on.
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The frontend is built with Expo and React Native and is responsible for the user experience across onboarding, personalized dashboards, AI chat, alerts, and economic impact visualizations.
 
-## Get started
+## What the App Does
 
-1. Install dependencies
+- Explains economic events in plain language.
+- Shows users how changes in the market may affect cost of living and business decisions.
+- Provides a curated economic feed and impact-focused dashboards.
+- Offers an AI chat experience for asking questions about money, markets, and everyday impact.
+- Supports authentication, profile management, and notifications.
 
-   ```bash
-   npm install
-   ```
+## Core Screens
 
-2. Start the app
+- Home dashboard
+- Impact analytics
+- Ask Mali chat
+- Economic feed
+- Profile
+- Notifications
+- Authentication flow for sign in, sign up, password reset, and verification
 
-   ```bash
-   npx expo start
-   ```
+## Tech Stack
 
-In the output, you'll find options to open the app in a
+- Expo 54
+- React Native 0.81
+- React 19
+- TypeScript
+- Expo Router for file-based navigation
+- NativeWind for utility-first styling
+- Gluestack UI for UI primitives
+- Redux Toolkit for app state
+- Axios for API access
+- Firebase Authentication
+- EAS Build for app delivery
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+```text
+app/                    Route-based screens using Expo Router
+  (auth)/               Authentication flow
+  (tabs)/               Main tab navigation
+assets/                 Icons, backgrounds, animations, and app imagery
+authentication/         Firebase auth setup and auth error handling
+components/             Shared UI and feature-specific components
+constants/              Theme and font constants
+contexts/               Shared React contexts such as theming
+hooks/                  Feature hooks for auth, dashboard, feed, impact, and profile
+redux/                  Global store and slices
+services/               API clients and service integrations
+scripts/                Local utility scripts
+```
 
-## Get a fresh project
+## Navigation Overview
 
-When you're ready, run:
+The application uses Expo Router with grouped routes:
+
+- `app/(auth)` contains the authentication experience.
+- `app/(tabs)` contains the main authenticated tab layout.
+- `app/mali-chat.tsx` is opened as a fullscreen route from the Ask Mali tab.
+- `app/notifications.tsx` provides the notifications screen outside the tab layout.
+
+Main tabs currently include:
+
+- Home
+- Impact
+- Ask Mali
+- Feed
+- Profile
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or later recommended
+- npm
+- Xcode for iOS simulator development on macOS
+- Android Studio for Android emulator development
+- Expo CLI via `npx expo`
+
+### Install Dependencies
 
 ```bash
+npm install
+```
+
+### Run the App
+
+```bash
+npm run start
+```
+
+You can also run platform-specific commands:
+
+```bash
+npm run ios
+npm run android
+npm run web
+```
+
+## Environment Configuration
+
+This project expects Expo public environment variables for Firebase and the backend API.
+
+Required variables:
+
+```bash
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+EXPO_PUBLIC_API_BASE_URL_DEV=
+EXPO_PUBLIC_API_BASE_URL_PROD=
+```
+
+These values are consumed by:
+
+- `authentication/firebase-config.ts`
+- `services/api.ts`
+
+If the Firebase values are missing, the app will fail early during initialization.
+
+## Firebase Setup
+
+The app is configured to use Firebase Authentication.
+
+Local native config files used by the project:
+
+- `GoogleService-Info.plist`
+- `google-services.json`
+
+For EAS or CI builds, `app.config.ts` also supports injecting these files from base64-encoded secrets:
+
+```bash
+IOS_FIREBASE_BASE64=
+ANDROID_FIREBASE_BASE64=
+```
+
+If those secrets are present, the config writes the decoded files during build setup.
+
+## Build and Release
+
+This repository includes EAS configuration in `eas.json`.
+
+Available build profiles:
+
+- `development`
+- `mali-stagging`
+- `mali-production`
+
+Examples:
+
+```bash
+eas build --platform ios --profile development
+eas build --platform android --profile mali-production
+```
+
+App identifiers configured in `app.config.ts`:
+
+- iOS bundle identifier: `com.pyra.mali`
+- Android package: `com.pyra.mali`
+
+## Quality Checks
+
+Run linting with:
+
+```bash
+npm run lint
+```
+
+## Development Notes
+
+- Routing is file-based through Expo Router.
+- The app uses typed routes and React Compiler experiments in Expo config.
+- Theming is shared through the theme context and reused across tabs and screens.
+- API access is centralized through the Axios client in `services/api.ts`.
+
+## Contributing
+
+1. Install dependencies.
+2. Configure the required environment variables.
+3. Run the app locally.
+4. Lint before opening a pull request.
+5. Keep new features aligned with the existing route, hook, and component structure.
+
+## Useful Commands
+
+```bash
+npm run start
+npm run ios
+npm run android
+npm run web
+npm run lint
 npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Reference
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo documentation](https://docs.expo.dev/)
+- [Expo Router documentation](https://docs.expo.dev/router/introduction/)
+- [EAS documentation](https://docs.expo.dev/eas/)
+- [Firebase Authentication docs](https://firebase.google.com/docs/auth)
